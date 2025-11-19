@@ -24,3 +24,7 @@ logs/
 tmp/
 temp/
 *.tmp
+test-multiraft
+test-multiraft.sh
+
+data/

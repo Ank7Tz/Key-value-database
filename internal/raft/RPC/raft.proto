@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package raftRPC;
+option go_package = "key_value_store/internal/raft/RPC/raftRPC";
+
+message Command {
+    string op = 1;
+    string key = 2;
+    bytes value = 3;
+}
+
+message LogEntry {
+    int64 term = 1;
+    Command command = 2;
+}
+
+message AppendEntriesRequest {
+    int64 shard_id = 1;
+    int64 term = 2;
+    int64 leader_id = 3;
+    int64 prev_log_index = 4;
+    int64 prev_log_term = 5;
+    repeated LogEntry entries = 6;
+    int64 leader_commit_index = 7;
+}
+
+message AppendEntriesReply {
+    int64 shard_id = 1;
+    int64 term = 2;
+    bool success = 3;
+}
+
+message RequestVote {
+    int64 shard_id = 1;
+    int64 term = 2;
+    int64 candidate_id = 3;
+    int64 last_log_index = 4;
+    int64 last_log_term = 5;
+}
+
+message RequestVoteReply {
+    int64 shard_id = 1;
+    int64 term = 2;
+    bool vote_granted = 3;
+}
+
+service Raft {
+    rpc SendAppendEntries(AppendEntriesRequest) returns (AppendEntriesReply) {}
+    rpc SendRequestVote(RequestVote) returns (RequestVoteReply) {}
+}
