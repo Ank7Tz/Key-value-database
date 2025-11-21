@@ -40,6 +40,23 @@ func (d *InMemDataStore) Delete(key string) error {
 	return nil
 }
 
+// GetAll returns a copy of all key-value pairs in the store
+func (d *InMemDataStore) GetAll() map[string][]byte {
+	data := make(map[string][]byte, len(d.store))
+	for k, v := range d.store {
+		// Create a copy of the value to avoid sharing references
+		valueCopy := make([]byte, len(v))
+		copy(valueCopy, v)
+		data[k] = valueCopy
+	}
+	return data
+}
+
+// Clear removes all entries from the store
+func (d *InMemDataStore) Clear() {
+	d.store = make(map[string][]byte)
+}
+
 // TODO: Implement LevelDBStore
 type LevelDBStore struct {
 	db *levelDb.DB
