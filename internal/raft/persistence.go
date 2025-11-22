@@ -11,23 +11,19 @@ import (
 	pb "key_value_store/internal/raft/RPC"
 )
 
-// PersistentState holds the state that needs to be persisted
 type PersistentState struct {
 	CurrentTerm int64
-	VotedFor    int64
+	VotedFor    string
 	Log         []*pb.LogEntry
 }
 
-// Persister handles persistence of Raft state to disk
 type Persister struct {
 	mu        sync.Mutex
 	dir       string
 	stateFile string
 }
 
-// NewPersister creates a new persister
-func NewPersister(nodeID int64, baseDir string) (*Persister, error) {
-	dir := filepath.Join(baseDir, fmt.Sprintf("node-%d", nodeID))
+func NewPersister(dir string) (*Persister, error) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, err
 	}
@@ -38,34 +34,29 @@ func NewPersister(nodeID int64, baseDir string) (*Persister, error) {
 	}, nil
 }
 
-// SaveState saves the Raft state to disk
 func (p *Persister) SaveState(state *PersistentState) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	// Encode state to bytes
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 	if err := encoder.Encode(state); err != nil {
 		return fmt.Errorf("failed to encode state: %v", err)
 	}
 
-	// Write to temporary file first, then rename for atomicity
 	tempFile := p.stateFile + ".tmp"
 	if err := os.WriteFile(tempFile, buf.Bytes(), 0644); err != nil {
 		return fmt.Errorf("failed to write temp file: %v", err)
 	}
 
-	// Atomic rename
 	if err := os.Rename(tempFile, p.stateFile); err != nil {
-		os.Remove(tempFile) // Clean up temp file
+		os.Remove(tempFile)
 		return fmt.Errorf("failed to rename temp file: %v", err)
 	}
 
 	return nil
 }
 
-// LoadState loads the Raft state from disk
 func (p *Persister) LoadState() (*PersistentState, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -73,10 +64,9 @@ func (p *Persister) LoadState() (*PersistentState, error) {
 	data, err := os.ReadFile(p.stateFile)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// No saved state, return empty state
 			return &PersistentState{
 				CurrentTerm: 0,
-				VotedFor:    -1,
+				VotedFor:    "",
 				Log:         []*pb.LogEntry{{Term: 0}},
 			}, nil
 		}
@@ -93,7 +83,6 @@ func (p *Persister) LoadState() (*PersistentState, error) {
 	return &state, nil
 }
 
-// StateSize returns the size of the saved state in bytes
 func (p *Persister) StateSize() int64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -105,7 +94,6 @@ func (p *Persister) StateSize() int64 {
 	return info.Size()
 }
 
-// Clear removes all persisted state
 func (p *Persister) Clear() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()

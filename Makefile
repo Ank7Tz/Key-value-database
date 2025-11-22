@@ -4,7 +4,7 @@
 BINARY_NAME=key_value_store
 
 # Build the project
-build:
+build: proto
 	go build -o $(BINARY_NAME)
 
 # Generate protobuf code
@@ -17,4 +17,4 @@ proto:
 clean:
 	go clean
 	rm -f $(BINARY_NAME)
-	rm -rf ./db
+	rm -rf ./data

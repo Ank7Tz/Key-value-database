@@ -28,3 +28,5 @@ test-multiraft
 test-multiraft.sh
 
 data/
+
+/key_value_store

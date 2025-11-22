@@ -10,8 +10,8 @@ import (
 )
 
 type RaftClientLayer interface {
-	SendVoteRequest(*pb.RequestVote, *pb.RequestVoteReply) bool
-	SendAppendEntriesRequest(*pb.AppendEntriesRequest, *pb.AppendEntriesReply) bool
+	SendVoteRequest(groupId string, req *pb.RequestVote, reply *pb.RequestVoteReply) bool
+	SendAppendEntriesRequest(groupId string, req *pb.AppendEntriesRequest, reply *pb.AppendEntriesReply) bool
 }
 
 type NodeState int
@@ -25,12 +25,16 @@ const (
 type RaftNode struct {
 	mtx sync.Mutex
 
-	Id    int64
+	groupId string
+
+	Id    string
 	state NodeState
-	peers []int64
+	peers []string
+
+	currentLeader string
 
 	currentTerm int64
-	votedFor    int64
+	votedFor    string
 
 	log []*pb.LogEntry
 
@@ -49,29 +53,31 @@ type RaftNode struct {
 
 	pendingCommands map[int64]chan bool
 
-	clients map[int64]RaftClientLayer
+	clients map[string]RaftClientLayer
 
 	persister *Persister
 }
 
-func NewRaftNode(id int64, peers []int64, clients map[int64]RaftClientLayer, store database.Store, persister *Persister) *RaftNode {
+func NewRaftNode(id string, groupId string, peers []string, clients map[string]RaftClientLayer, store database.Store, persister *Persister) *RaftNode {
 	// Try to load persisted state
 	var persistedState *PersistentState
 	if persister != nil {
 		var err error
 		persistedState, err = persister.LoadState()
 		if err != nil {
-			log.Printf("Node %d failed to load persisted state: %v, starting fresh", id, err)
+			log.Printf("Node %s failed to load persisted state: %v, starting fresh", id, err)
 			persistedState = nil
 		}
 	}
 
 	node := &RaftNode{
-		Id:          id,
-		state:       Follower,
-		peers:       peers,
-		currentTerm: 0,
-		votedFor:    -1,
+		Id:            id,
+		groupId:       groupId,
+		state:         Follower,
+		peers:         peers,
+		currentTerm:   0,
+		currentLeader: "",
+		votedFor:      "",
 		log: []*pb.LogEntry{{
 			Term: 0,
 		}},
@@ -79,7 +85,7 @@ func NewRaftNode(id int64, peers []int64, clients map[int64]RaftClientLayer, sto
 		lastApplied:      0,
 		KVStore:          store,
 		applyCh:          make(chan pb.LogEntry, 100),
-		heartBeatTimeout: 150 * time.Millisecond,
+		heartBeatTimeout: 1000 * time.Millisecond,
 		pendingCommands:  make(map[int64]chan bool),
 		clients:          clients,
 		persister:        persister,
@@ -90,11 +96,11 @@ func NewRaftNode(id int64, peers []int64, clients map[int64]RaftClientLayer, sto
 		node.currentTerm = persistedState.CurrentTerm
 		node.votedFor = persistedState.VotedFor
 		node.log = persistedState.Log
-		log.Printf("Node %d restored state: term=%d, log entries=%d",
+		log.Printf("Node %s restored state: term=%d, log entries=%d",
 			id, node.currentTerm, len(node.log))
 
 		// Replay log to rebuild state
-		node.replayLog()
+		// node.replayLog()
 	}
 
 	node.resetElectionTimeout()
@@ -103,11 +109,10 @@ func NewRaftNode(id int64, peers []int64, clients map[int64]RaftClientLayer, sto
 }
 
 func (node *RaftNode) resetElectionTimeout() {
-	node.electionTimeout = time.Duration(300+rand.Intn(300)) * time.Millisecond
+	node.electionTimeout = time.Duration(1000+rand.Intn(500)) * time.Millisecond
 	node.lastHeartBeat = time.Now()
 }
 
-// persist saves the current state to disk
 func (node *RaftNode) persist() {
 	if node.persister == nil {
 		return
@@ -120,29 +125,30 @@ func (node *RaftNode) persist() {
 	}
 
 	if err := node.persister.SaveState(state); err != nil {
-		log.Printf("Node %d failed to persist state: %v", node.Id, err)
+		log.Printf("Node %s failed to persist state: %v", node.Id, err)
 	}
 }
 
+// TODO: remove this as state is persisted
 // replayLog replays all log entries to rebuild the state machine
-func (node *RaftNode) replayLog() {
-	// Apply all entries from lastApplied+1 up to the last log entry
-	lastIndex := int64(len(node.log)) - 1
+// func (node *RaftNode) replayLog() {
+// 	// Apply all entries from lastApplied+1 up to the last log entry
+// 	lastIndex := int64(len(node.log)) - 1
 
-	for i := node.lastApplied + 1; i <= lastIndex; i++ {
-		if i >= 0 && i < int64(len(node.log)) {
-			entry := node.log[i]
-			if entry.Command != nil {
-				node.applyToStateMachine(entry)
-				node.lastApplied = i
-			}
-		}
-	}
+// 	for i := node.lastApplied + 1; i <= lastIndex; i++ {
+// 		if i >= 0 && i < int64(len(node.log)) {
+// 			entry := node.log[i]
+// 			if entry.Command != nil {
+// 				node.applyToStateMachine(entry)
+// 				node.lastApplied = i
+// 			}
+// 		}
+// 	}
 
-	if node.lastApplied > 0 {
-		log.Printf("Node %d replayed log: applied %d entries", node.Id, node.lastApplied)
-	}
-}
+// 	if node.lastApplied > 0 {
+// 		log.Printf("Node %s replayed log: applied %d entries", node.Id, node.lastApplied)
+// 	}
+// }
 
 func (node *RaftNode) Start() {
 	go node.ElectionTimer()
@@ -182,7 +188,7 @@ func (node *RaftNode) StartElection() {
 	lastLogTerm := node.getLogTerm(lastLogIndex)
 	node.mtx.Unlock()
 
-	log.Printf("Node %d starting election for term %d", node.Id, currentTerm)
+	log.Printf("Node %s starting election (group - %s) for term %d", node.Id, node.groupId, currentTerm)
 
 	votes := 1
 	var voteMtx sync.Mutex
@@ -198,6 +204,7 @@ func (node *RaftNode) StartElection() {
 	for _, conn := range node.clients {
 		go func(conn RaftClientLayer) {
 			voteRequest := &pb.RequestVote{
+				ShardId:      node.groupId,
 				Term:         currentTerm,
 				CandidateId:  node.Id,
 				LastLogIndex: lastLogIndex,
@@ -206,7 +213,7 @@ func (node *RaftNode) StartElection() {
 
 			voteRequestReply := &pb.RequestVoteReply{}
 
-			if conn.SendVoteRequest(voteRequest, voteRequestReply) {
+			if conn.SendVoteRequest(node.groupId, voteRequest, voteRequestReply) {
 				node.mtx.Lock()
 				defer node.mtx.Unlock()
 
@@ -234,10 +241,10 @@ func (node *RaftNode) StartElection() {
 func (node *RaftNode) becomeFollower(term int64) {
 	node.state = Follower
 	node.currentTerm = term
-	node.votedFor = -1
+	node.votedFor = ""
 	node.persist()
 	node.resetElectionTimeout()
-	log.Printf("Node %d became follower for term %d", node.Id, term)
+	log.Printf("Node %s became follower (group -%s) for term %d", node.Id, node.groupId, term)
 }
 
 func (node *RaftNode) becomeLeader() {
@@ -245,8 +252,9 @@ func (node *RaftNode) becomeLeader() {
 		return
 	}
 
-	log.Printf("Node %d became leader for term %d", node.Id, node.currentTerm)
+	log.Printf("Node %s became leader (group - %s) for term %d", node.Id, node.groupId, node.currentTerm)
 	node.state = Leader
+	node.currentLeader = node.Id
 	node.nextIndex = make([]int64, len(node.peers))
 	node.matchIndex = make([]int64, len(node.peers))
 
@@ -276,7 +284,7 @@ func (node *RaftNode) sendHeartBeats() {
 	}
 }
 
-func (node *RaftNode) SendAppendEntries(peerIdx int, peerId int64) {
+func (node *RaftNode) SendAppendEntries(peerIdx int, peerId string) {
 	node.mtx.Lock()
 	if node.state != Leader {
 		node.mtx.Unlock()
@@ -288,6 +296,7 @@ func (node *RaftNode) SendAppendEntries(peerIdx int, peerId int64) {
 	entries := node.log[node.nextIndex[peerIdx]:]
 
 	req := pb.AppendEntriesRequest{
+		ShardId:           node.groupId,
 		Term:              node.currentTerm,
 		LeaderId:          node.Id,
 		PrevLogIndex:      prevLogIndex,
@@ -320,9 +329,9 @@ func (node *RaftNode) SendAppendEntries(peerIdx int, peerId int64) {
 	}
 }
 
-func (node *RaftNode) appendEntriesRPC(peer int64, req *pb.AppendEntriesRequest, reply *pb.AppendEntriesReply) bool {
-	client := node.clients[peer]
-	return client.SendAppendEntriesRequest(req, reply)
+func (node *RaftNode) appendEntriesRPC(peerId string, req *pb.AppendEntriesRequest, reply *pb.AppendEntriesReply) bool {
+	client := node.clients[peerId]
+	return client.SendAppendEntriesRequest(node.groupId, req, reply)
 }
 
 func (node *RaftNode) updateCommitIndex() {
@@ -369,10 +378,10 @@ func (node *RaftNode) applyToStateMachine(entry *pb.LogEntry) {
 	switch entry.Command.Op {
 	case "write":
 		node.KVStore.Write(entry.Command.Key, entry.Command.Value)
-		log.Printf("Node %d applied: SET %s=%s", node.Id, entry.Command.Key, entry.Command.Value)
+		log.Printf("Node %s applied: SET %s=%s", node.Id, entry.Command.Key, entry.Command.Value)
 	case "delete":
 		node.KVStore.Delete(entry.Command.Key)
-		log.Printf("Node %d applied: DELETE %s", node.Id, entry.Command.Key)
+		log.Printf("Node %s applied: DELETE %s", node.Id, entry.Command.Key)
 	}
 }
 
@@ -395,7 +404,7 @@ func (node *RaftNode) RequestVoteRPCHandler(req *pb.RequestVote, reply *pb.Reque
 	lastLogTerm := node.getLogTerm(lastLogIndex)
 
 	logUpToDate := req.LastLogTerm > lastLogTerm || (req.LastLogTerm == lastLogTerm && req.LastLogIndex >= lastLogIndex)
-	if logUpToDate && (node.votedFor == -1 || node.votedFor == req.CandidateId) {
+	if logUpToDate && (node.votedFor == "" || node.votedFor == req.CandidateId) {
 		reply.VoteGranted = true
 		node.votedFor = req.CandidateId
 		node.persist()
@@ -421,6 +430,7 @@ func (node *RaftNode) AppendEntriesHandler(req *pb.AppendEntriesRequest, reply *
 	}
 
 	node.resetElectionTimeout()
+	node.currentLeader = req.LeaderId
 
 	// Check log consistency
 	if req.PrevLogIndex >= int64(len(node.log)) || node.getLogTerm(req.PrevLogIndex) != req.PrevLogTerm {
@@ -469,12 +479,12 @@ func (node *RaftNode) ProposeCommand(cmd *pb.Command) (int64, chan bool, bool) {
 	ch := make(chan bool, 1)
 	node.pendingCommands[logIndex] = ch
 
-	log.Printf("Node %d proposed command at index %d: %s %s", node.Id, logIndex, cmd.Op, cmd.Key)
+	log.Printf("Node %s proposed command at index %d: %s %s", node.Id, logIndex, cmd.Op, cmd.Key)
 
 	// In single-node cluster, commit immediately
 	if len(node.peers) == 0 {
 		node.commitIndex = logIndex
-		log.Printf("Node %d (single-node) committed index %d", node.Id, logIndex)
+		log.Printf("Node %s (single-node) committed index %d", node.Id, logIndex)
 	}
 
 	return logIndex, ch, true
@@ -514,10 +524,9 @@ func (node *RaftNode) getLastLogIndex() int64 {
 	return int64(len(node.log)) - 1
 }
 
-// getLogEntry returns the log entry at the given index
-func (node *RaftNode) getLogEntry(index int64) *pb.LogEntry {
-	if index < 0 || index >= int64(len(node.log)) {
-		return nil
-	}
-	return node.log[index]
+func (node *RaftNode) getLeader() string {
+	node.mtx.Lock()
+	defer node.mtx.Unlock()
+
+	return node.currentLeader
 }

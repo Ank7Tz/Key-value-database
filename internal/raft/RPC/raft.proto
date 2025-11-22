@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package raftRPC;
-option go_package = "key_value_store/internal/raft/RPC/raftRPC";
+option go_package = "key_value_store/internal/raft/RPC";
 
 message Command {
     string op = 1;
@@ -15,9 +15,9 @@ message LogEntry {
 }
 
 message AppendEntriesRequest {
-    int64 shard_id = 1;
+    string shard_id = 1;
     int64 term = 2;
-    int64 leader_id = 3;
+    string leader_id = 3;
     int64 prev_log_index = 4;
     int64 prev_log_term = 5;
     repeated LogEntry entries = 6;
@@ -25,41 +25,52 @@ message AppendEntriesRequest {
 }
 
 message AppendEntriesReply {
-    int64 shard_id = 1;
+    string shard_id = 1;
     int64 term = 2;
     bool success = 3;
 }
 
 message RequestVote {
-    int64 shard_id = 1;
+    string shard_id = 1;
     int64 term = 2;
-    int64 candidate_id = 3;
+    string candidate_id = 3;
     int64 last_log_index = 4;
     int64 last_log_term = 5;
 }
 
 message RequestVoteReply {
-    int64 shard_id = 1;
+    string shard_id = 1;
     int64 term = 2;
     bool vote_granted = 3;
 }
 
-message InstallSnapshotRequest {
-    int64 shard_id = 1;
-    int64 term = 2;
-    int64 leader_id = 3;
-    int64 last_included_index = 4;
-    int64 last_included_term = 5;
-    bytes data = 6;
+message ForwardWriteRequest {
+    string shard_id = 1;
+    string key = 2;
+    bytes value = 3;
 }
 
-message InstallSnapshotReply {
-    int64 shard_id = 1;
-    int64 term = 2;
+message ForwardWriteReply {
+    bool success = 1;
+    string error = 2;
+    string leader_id = 3;
+}
+
+message ForwardReadRequest {
+    string shard_id = 1;
+    string key = 2;
+}
+
+message ForwardReadReply {
+    bool success = 1;
+    string error = 2;
+    bytes value = 3;
+    string leader_id = 4;
 }
 
 service Raft {
     rpc SendAppendEntries(AppendEntriesRequest) returns (AppendEntriesReply) {}
     rpc SendRequestVote(RequestVote) returns (RequestVoteReply) {}
-    rpc InstallSnapshot(InstallSnapshotRequest) returns (InstallSnapshotReply) {}
+    rpc ForwardWrite(ForwardWriteRequest) returns (ForwardWriteReply) {}
+    rpc ForwardRead(ForwardReadRequest) returns (ForwardReadReply) {}
 }

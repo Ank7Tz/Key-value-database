@@ -4,7 +4,7 @@
 // 	protoc        v3.21.12
 // source: internal/raft/RPC/raft.proto
 
-package raftRPC
+package RPC
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -135,9 +135,9 @@ func (x *LogEntry) GetCommand() *Command {
 
 type AppendEntriesRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	ShardId           int64                  `protobuf:"varint,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	ShardId           string                 `protobuf:"bytes,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
 	Term              int64                  `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
-	LeaderId          int64                  `protobuf:"varint,3,opt,name=leader_id,json=leaderId,proto3" json:"leader_id,omitempty"`
+	LeaderId          string                 `protobuf:"bytes,3,opt,name=leader_id,json=leaderId,proto3" json:"leader_id,omitempty"`
 	PrevLogIndex      int64                  `protobuf:"varint,4,opt,name=prev_log_index,json=prevLogIndex,proto3" json:"prev_log_index,omitempty"`
 	PrevLogTerm       int64                  `protobuf:"varint,5,opt,name=prev_log_term,json=prevLogTerm,proto3" json:"prev_log_term,omitempty"`
 	Entries           []*LogEntry            `protobuf:"bytes,6,rep,name=entries,proto3" json:"entries,omitempty"`
@@ -176,11 +176,11 @@ func (*AppendEntriesRequest) Descriptor() ([]byte, []int) {
 	return file_internal_raft_RPC_raft_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *AppendEntriesRequest) GetShardId() int64 {
+func (x *AppendEntriesRequest) GetShardId() string {
 	if x != nil {
 		return x.ShardId
 	}
-	return 0
+	return ""
 }
 
 func (x *AppendEntriesRequest) GetTerm() int64 {
@@ -190,11 +190,11 @@ func (x *AppendEntriesRequest) GetTerm() int64 {
 	return 0
 }
 
-func (x *AppendEntriesRequest) GetLeaderId() int64 {
+func (x *AppendEntriesRequest) GetLeaderId() string {
 	if x != nil {
 		return x.LeaderId
 	}
-	return 0
+	return ""
 }
 
 func (x *AppendEntriesRequest) GetPrevLogIndex() int64 {
@@ -227,7 +227,7 @@ func (x *AppendEntriesRequest) GetLeaderCommitIndex() int64 {
 
 type AppendEntriesReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ShardId       int64                  `protobuf:"varint,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	ShardId       string                 `protobuf:"bytes,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
 	Term          int64                  `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
 	Success       bool                   `protobuf:"varint,3,opt,name=success,proto3" json:"success,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -264,11 +264,11 @@ func (*AppendEntriesReply) Descriptor() ([]byte, []int) {
 	return file_internal_raft_RPC_raft_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *AppendEntriesReply) GetShardId() int64 {
+func (x *AppendEntriesReply) GetShardId() string {
 	if x != nil {
 		return x.ShardId
 	}
-	return 0
+	return ""
 }
 
 func (x *AppendEntriesReply) GetTerm() int64 {
@@ -287,9 +287,9 @@ func (x *AppendEntriesReply) GetSuccess() bool {
 
 type RequestVote struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ShardId       int64                  `protobuf:"varint,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	ShardId       string                 `protobuf:"bytes,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
 	Term          int64                  `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
-	CandidateId   int64                  `protobuf:"varint,3,opt,name=candidate_id,json=candidateId,proto3" json:"candidate_id,omitempty"`
+	CandidateId   string                 `protobuf:"bytes,3,opt,name=candidate_id,json=candidateId,proto3" json:"candidate_id,omitempty"`
 	LastLogIndex  int64                  `protobuf:"varint,4,opt,name=last_log_index,json=lastLogIndex,proto3" json:"last_log_index,omitempty"`
 	LastLogTerm   int64                  `protobuf:"varint,5,opt,name=last_log_term,json=lastLogTerm,proto3" json:"last_log_term,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -326,11 +326,11 @@ func (*RequestVote) Descriptor() ([]byte, []int) {
 	return file_internal_raft_RPC_raft_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *RequestVote) GetShardId() int64 {
+func (x *RequestVote) GetShardId() string {
 	if x != nil {
 		return x.ShardId
 	}
-	return 0
+	return ""
 }
 
 func (x *RequestVote) GetTerm() int64 {
@@ -340,11 +340,11 @@ func (x *RequestVote) GetTerm() int64 {
 	return 0
 }
 
-func (x *RequestVote) GetCandidateId() int64 {
+func (x *RequestVote) GetCandidateId() string {
 	if x != nil {
 		return x.CandidateId
 	}
-	return 0
+	return ""
 }
 
 func (x *RequestVote) GetLastLogIndex() int64 {
@@ -363,7 +363,7 @@ func (x *RequestVote) GetLastLogTerm() int64 {
 
 type RequestVoteReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ShardId       int64                  `protobuf:"varint,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	ShardId       string                 `protobuf:"bytes,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
 	Term          int64                  `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
 	VoteGranted   bool                   `protobuf:"varint,3,opt,name=vote_granted,json=voteGranted,proto3" json:"vote_granted,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -400,11 +400,11 @@ func (*RequestVoteReply) Descriptor() ([]byte, []int) {
 	return file_internal_raft_RPC_raft_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *RequestVoteReply) GetShardId() int64 {
+func (x *RequestVoteReply) GetShardId() string {
 	if x != nil {
 		return x.ShardId
 	}
-	return 0
+	return ""
 }
 
 func (x *RequestVoteReply) GetTerm() int64 {
@@ -421,6 +421,246 @@ func (x *RequestVoteReply) GetVoteGranted() bool {
 	return false
 }
 
+type ForwardWriteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ShardId       string                 `protobuf:"bytes,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Value         []byte                 `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForwardWriteRequest) Reset() {
+	*x = ForwardWriteRequest{}
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForwardWriteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForwardWriteRequest) ProtoMessage() {}
+
+func (x *ForwardWriteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForwardWriteRequest.ProtoReflect.Descriptor instead.
+func (*ForwardWriteRequest) Descriptor() ([]byte, []int) {
+	return file_internal_raft_RPC_raft_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ForwardWriteRequest) GetShardId() string {
+	if x != nil {
+		return x.ShardId
+	}
+	return ""
+}
+
+func (x *ForwardWriteRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *ForwardWriteRequest) GetValue() []byte {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+type ForwardWriteReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	LeaderId      string                 `protobuf:"bytes,3,opt,name=leader_id,json=leaderId,proto3" json:"leader_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForwardWriteReply) Reset() {
+	*x = ForwardWriteReply{}
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForwardWriteReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForwardWriteReply) ProtoMessage() {}
+
+func (x *ForwardWriteReply) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForwardWriteReply.ProtoReflect.Descriptor instead.
+func (*ForwardWriteReply) Descriptor() ([]byte, []int) {
+	return file_internal_raft_RPC_raft_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ForwardWriteReply) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *ForwardWriteReply) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ForwardWriteReply) GetLeaderId() string {
+	if x != nil {
+		return x.LeaderId
+	}
+	return ""
+}
+
+type ForwardReadRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ShardId       string                 `protobuf:"bytes,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForwardReadRequest) Reset() {
+	*x = ForwardReadRequest{}
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForwardReadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForwardReadRequest) ProtoMessage() {}
+
+func (x *ForwardReadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForwardReadRequest.ProtoReflect.Descriptor instead.
+func (*ForwardReadRequest) Descriptor() ([]byte, []int) {
+	return file_internal_raft_RPC_raft_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ForwardReadRequest) GetShardId() string {
+	if x != nil {
+		return x.ShardId
+	}
+	return ""
+}
+
+func (x *ForwardReadRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type ForwardReadReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	Value         []byte                 `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+	LeaderId      string                 `protobuf:"bytes,4,opt,name=leader_id,json=leaderId,proto3" json:"leader_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForwardReadReply) Reset() {
+	*x = ForwardReadReply{}
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForwardReadReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForwardReadReply) ProtoMessage() {}
+
+func (x *ForwardReadReply) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForwardReadReply.ProtoReflect.Descriptor instead.
+func (*ForwardReadReply) Descriptor() ([]byte, []int) {
+	return file_internal_raft_RPC_raft_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ForwardReadReply) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *ForwardReadReply) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ForwardReadReply) GetValue() []byte {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+func (x *ForwardReadReply) GetLeaderId() string {
+	if x != nil {
+		return x.LeaderId
+	}
+	return ""
+}
+
 var File_internal_raft_RPC_raft_proto protoreflect.FileDescriptor
 
 const file_internal_raft_RPC_raft_proto_rawDesc = "" +
@@ -434,30 +674,48 @@ const file_internal_raft_RPC_raft_proto_rawDesc = "" +
 	"\x04term\x18\x01 \x01(\x03R\x04term\x12*\n" +
 	"\acommand\x18\x02 \x01(\v2\x10.raftRPC.CommandR\acommand\"\x89\x02\n" +
 	"\x14AppendEntriesRequest\x12\x19\n" +
-	"\bshard_id\x18\x01 \x01(\x03R\ashardId\x12\x12\n" +
+	"\bshard_id\x18\x01 \x01(\tR\ashardId\x12\x12\n" +
 	"\x04term\x18\x02 \x01(\x03R\x04term\x12\x1b\n" +
-	"\tleader_id\x18\x03 \x01(\x03R\bleaderId\x12$\n" +
+	"\tleader_id\x18\x03 \x01(\tR\bleaderId\x12$\n" +
 	"\x0eprev_log_index\x18\x04 \x01(\x03R\fprevLogIndex\x12\"\n" +
 	"\rprev_log_term\x18\x05 \x01(\x03R\vprevLogTerm\x12+\n" +
 	"\aentries\x18\x06 \x03(\v2\x11.raftRPC.LogEntryR\aentries\x12.\n" +
 	"\x13leader_commit_index\x18\a \x01(\x03R\x11leaderCommitIndex\"]\n" +
 	"\x12AppendEntriesReply\x12\x19\n" +
-	"\bshard_id\x18\x01 \x01(\x03R\ashardId\x12\x12\n" +
+	"\bshard_id\x18\x01 \x01(\tR\ashardId\x12\x12\n" +
 	"\x04term\x18\x02 \x01(\x03R\x04term\x12\x18\n" +
 	"\asuccess\x18\x03 \x01(\bR\asuccess\"\xa9\x01\n" +
 	"\vRequestVote\x12\x19\n" +
-	"\bshard_id\x18\x01 \x01(\x03R\ashardId\x12\x12\n" +
+	"\bshard_id\x18\x01 \x01(\tR\ashardId\x12\x12\n" +
 	"\x04term\x18\x02 \x01(\x03R\x04term\x12!\n" +
-	"\fcandidate_id\x18\x03 \x01(\x03R\vcandidateId\x12$\n" +
+	"\fcandidate_id\x18\x03 \x01(\tR\vcandidateId\x12$\n" +
 	"\x0elast_log_index\x18\x04 \x01(\x03R\flastLogIndex\x12\"\n" +
 	"\rlast_log_term\x18\x05 \x01(\x03R\vlastLogTerm\"d\n" +
 	"\x10RequestVoteReply\x12\x19\n" +
-	"\bshard_id\x18\x01 \x01(\x03R\ashardId\x12\x12\n" +
+	"\bshard_id\x18\x01 \x01(\tR\ashardId\x12\x12\n" +
 	"\x04term\x18\x02 \x01(\x03R\x04term\x12!\n" +
-	"\fvote_granted\x18\x03 \x01(\bR\vvoteGranted2\x9f\x01\n" +
+	"\fvote_granted\x18\x03 \x01(\bR\vvoteGranted\"X\n" +
+	"\x13ForwardWriteRequest\x12\x19\n" +
+	"\bshard_id\x18\x01 \x01(\tR\ashardId\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x03 \x01(\fR\x05value\"`\n" +
+	"\x11ForwardWriteReply\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x12\x1b\n" +
+	"\tleader_id\x18\x03 \x01(\tR\bleaderId\"A\n" +
+	"\x12ForwardReadRequest\x12\x19\n" +
+	"\bshard_id\x18\x01 \x01(\tR\ashardId\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\"u\n" +
+	"\x10ForwardReadReply\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x12\x14\n" +
+	"\x05value\x18\x03 \x01(\fR\x05value\x12\x1b\n" +
+	"\tleader_id\x18\x04 \x01(\tR\bleaderId2\xb4\x02\n" +
 	"\x04Raft\x12Q\n" +
 	"\x11SendAppendEntries\x12\x1d.raftRPC.AppendEntriesRequest\x1a\x1b.raftRPC.AppendEntriesReply\"\x00\x12D\n" +
-	"\x0fSendRequestVote\x12\x14.raftRPC.RequestVote\x1a\x19.raftRPC.RequestVoteReply\"\x00B+Z)key_value_store/internal/raft/RPC/raftRPCb\x06proto3"
+	"\x0fSendRequestVote\x12\x14.raftRPC.RequestVote\x1a\x19.raftRPC.RequestVoteReply\"\x00\x12J\n" +
+	"\fForwardWrite\x12\x1c.raftRPC.ForwardWriteRequest\x1a\x1a.raftRPC.ForwardWriteReply\"\x00\x12G\n" +
+	"\vForwardRead\x12\x1b.raftRPC.ForwardReadRequest\x1a\x19.raftRPC.ForwardReadReply\"\x00B#Z!key_value_store/internal/raft/RPCb\x06proto3"
 
 var (
 	file_internal_raft_RPC_raft_proto_rawDescOnce sync.Once
@@ -471,7 +729,7 @@ func file_internal_raft_RPC_raft_proto_rawDescGZIP() []byte {
 	return file_internal_raft_RPC_raft_proto_rawDescData
 }
 
-var file_internal_raft_RPC_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_internal_raft_RPC_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_internal_raft_RPC_raft_proto_goTypes = []any{
 	(*Command)(nil),              // 0: raftRPC.Command
 	(*LogEntry)(nil),             // 1: raftRPC.LogEntry
@@ -479,16 +737,24 @@ var file_internal_raft_RPC_raft_proto_goTypes = []any{
 	(*AppendEntriesReply)(nil),   // 3: raftRPC.AppendEntriesReply
 	(*RequestVote)(nil),          // 4: raftRPC.RequestVote
 	(*RequestVoteReply)(nil),     // 5: raftRPC.RequestVoteReply
+	(*ForwardWriteRequest)(nil),  // 6: raftRPC.ForwardWriteRequest
+	(*ForwardWriteReply)(nil),    // 7: raftRPC.ForwardWriteReply
+	(*ForwardReadRequest)(nil),   // 8: raftRPC.ForwardReadRequest
+	(*ForwardReadReply)(nil),     // 9: raftRPC.ForwardReadReply
 }
 var file_internal_raft_RPC_raft_proto_depIdxs = []int32{
 	0, // 0: raftRPC.LogEntry.command:type_name -> raftRPC.Command
 	1, // 1: raftRPC.AppendEntriesRequest.entries:type_name -> raftRPC.LogEntry
 	2, // 2: raftRPC.Raft.SendAppendEntries:input_type -> raftRPC.AppendEntriesRequest
 	4, // 3: raftRPC.Raft.SendRequestVote:input_type -> raftRPC.RequestVote
-	3, // 4: raftRPC.Raft.SendAppendEntries:output_type -> raftRPC.AppendEntriesReply
-	5, // 5: raftRPC.Raft.SendRequestVote:output_type -> raftRPC.RequestVoteReply
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
+	6, // 4: raftRPC.Raft.ForwardWrite:input_type -> raftRPC.ForwardWriteRequest
+	8, // 5: raftRPC.Raft.ForwardRead:input_type -> raftRPC.ForwardReadRequest
+	3, // 6: raftRPC.Raft.SendAppendEntries:output_type -> raftRPC.AppendEntriesReply
+	5, // 7: raftRPC.Raft.SendRequestVote:output_type -> raftRPC.RequestVoteReply
+	7, // 8: raftRPC.Raft.ForwardWrite:output_type -> raftRPC.ForwardWriteReply
+	9, // 9: raftRPC.Raft.ForwardRead:output_type -> raftRPC.ForwardReadReply
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
 	2, // [2:2] is the sub-list for extension extendee
 	0, // [0:2] is the sub-list for field type_name
@@ -505,7 +771,7 @@ func file_internal_raft_RPC_raft_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_raft_RPC_raft_proto_rawDesc), len(file_internal_raft_RPC_raft_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

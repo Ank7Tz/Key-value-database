@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: internal/raft/RPC/raft.proto
 
-package raftRPC
+package RPC
 
 import (
 	context "context"
@@ -21,6 +21,8 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	Raft_SendAppendEntries_FullMethodName = "/raftRPC.Raft/SendAppendEntries"
 	Raft_SendRequestVote_FullMethodName   = "/raftRPC.Raft/SendRequestVote"
+	Raft_ForwardWrite_FullMethodName      = "/raftRPC.Raft/ForwardWrite"
+	Raft_ForwardRead_FullMethodName       = "/raftRPC.Raft/ForwardRead"
 )
 
 // RaftClient is the client API for Raft service.
@@ -29,6 +31,8 @@ const (
 type RaftClient interface {
 	SendAppendEntries(ctx context.Context, in *AppendEntriesRequest, opts ...grpc.CallOption) (*AppendEntriesReply, error)
 	SendRequestVote(ctx context.Context, in *RequestVote, opts ...grpc.CallOption) (*RequestVoteReply, error)
+	ForwardWrite(ctx context.Context, in *ForwardWriteRequest, opts ...grpc.CallOption) (*ForwardWriteReply, error)
+	ForwardRead(ctx context.Context, in *ForwardReadRequest, opts ...grpc.CallOption) (*ForwardReadReply, error)
 }
 
 type raftClient struct {
@@ -59,12 +63,34 @@ func (c *raftClient) SendRequestVote(ctx context.Context, in *RequestVote, opts 
 	return out, nil
 }
 
+func (c *raftClient) ForwardWrite(ctx context.Context, in *ForwardWriteRequest, opts ...grpc.CallOption) (*ForwardWriteReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForwardWriteReply)
+	err := c.cc.Invoke(ctx, Raft_ForwardWrite_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *raftClient) ForwardRead(ctx context.Context, in *ForwardReadRequest, opts ...grpc.CallOption) (*ForwardReadReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForwardReadReply)
+	err := c.cc.Invoke(ctx, Raft_ForwardRead_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RaftServer is the server API for Raft service.
 // All implementations must embed UnimplementedRaftServer
 // for forward compatibility.
 type RaftServer interface {
 	SendAppendEntries(context.Context, *AppendEntriesRequest) (*AppendEntriesReply, error)
 	SendRequestVote(context.Context, *RequestVote) (*RequestVoteReply, error)
+	ForwardWrite(context.Context, *ForwardWriteRequest) (*ForwardWriteReply, error)
+	ForwardRead(context.Context, *ForwardReadRequest) (*ForwardReadReply, error)
 	mustEmbedUnimplementedRaftServer()
 }
 
@@ -80,6 +106,12 @@ func (UnimplementedRaftServer) SendAppendEntries(context.Context, *AppendEntries
 }
 func (UnimplementedRaftServer) SendRequestVote(context.Context, *RequestVote) (*RequestVoteReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendRequestVote not implemented")
+}
+func (UnimplementedRaftServer) ForwardWrite(context.Context, *ForwardWriteRequest) (*ForwardWriteReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ForwardWrite not implemented")
+}
+func (UnimplementedRaftServer) ForwardRead(context.Context, *ForwardReadRequest) (*ForwardReadReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ForwardRead not implemented")
 }
 func (UnimplementedRaftServer) mustEmbedUnimplementedRaftServer() {}
 func (UnimplementedRaftServer) testEmbeddedByValue()              {}
@@ -138,6 +170,42 @@ func _Raft_SendRequestVote_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Raft_ForwardWrite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForwardWriteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftServer).ForwardWrite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Raft_ForwardWrite_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftServer).ForwardWrite(ctx, req.(*ForwardWriteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Raft_ForwardRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForwardReadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftServer).ForwardRead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Raft_ForwardRead_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftServer).ForwardRead(ctx, req.(*ForwardReadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Raft_ServiceDesc is the grpc.ServiceDesc for Raft service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +220,14 @@ var Raft_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendRequestVote",
 			Handler:    _Raft_SendRequestVote_Handler,
+		},
+		{
+			MethodName: "ForwardWrite",
+			Handler:    _Raft_ForwardWrite_Handler,
+		},
+		{
+			MethodName: "ForwardRead",
+			Handler:    _Raft_ForwardRead_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
