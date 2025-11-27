@@ -129,27 +129,6 @@ func (node *RaftNode) persist() {
 	}
 }
 
-// TODO: remove this as state is persisted
-// replayLog replays all log entries to rebuild the state machine
-// func (node *RaftNode) replayLog() {
-// 	// Apply all entries from lastApplied+1 up to the last log entry
-// 	lastIndex := int64(len(node.log)) - 1
-
-// 	for i := node.lastApplied + 1; i <= lastIndex; i++ {
-// 		if i >= 0 && i < int64(len(node.log)) {
-// 			entry := node.log[i]
-// 			if entry.Command != nil {
-// 				node.applyToStateMachine(entry)
-// 				node.lastApplied = i
-// 			}
-// 		}
-// 	}
-
-// 	if node.lastApplied > 0 {
-// 		log.Printf("Node %s replayed log: applied %d entries", node.Id, node.lastApplied)
-// 	}
-// }
-
 func (node *RaftNode) Start() {
 	go node.ElectionTimer()
 	go node.applyCommittedEntries()
@@ -157,7 +136,7 @@ func (node *RaftNode) Start() {
 
 func (node *RaftNode) ElectionTimer() {
 	for {
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		node.mtx.Lock()
 		if node.state == Leader {
@@ -378,7 +357,7 @@ func (node *RaftNode) applyToStateMachine(entry *pb.LogEntry) {
 	switch entry.Command.Op {
 	case "write":
 		node.KVStore.Write(entry.Command.Key, entry.Command.Value)
-		log.Printf("Node %s applied: SET %s=%s", node.Id, entry.Command.Key, entry.Command.Value)
+		log.Printf("Node %s applied: WRITE %s=%s", node.Id, entry.Command.Key, entry.Command.Value)
 	case "delete":
 		node.KVStore.Delete(entry.Command.Key)
 		log.Printf("Node %s applied: DELETE %s", node.Id, entry.Command.Key)
@@ -481,7 +460,6 @@ func (node *RaftNode) ProposeCommand(cmd *pb.Command) (int64, chan bool, bool) {
 
 	log.Printf("Node %s proposed command at index %d: %s %s", node.Id, logIndex, cmd.Op, cmd.Key)
 
-	// In single-node cluster, commit immediately
 	if len(node.peers) == 0 {
 		node.commitIndex = logIndex
 		log.Printf("Node %s (single-node) committed index %d", node.Id, logIndex)
@@ -490,7 +468,6 @@ func (node *RaftNode) ProposeCommand(cmd *pb.Command) (int64, chan bool, bool) {
 	return logIndex, ch, true
 }
 
-// Helper functions
 func min(a, b int64) int64 {
 	if a < b {
 		return a
@@ -505,26 +482,23 @@ func max(a, b int64) int64 {
 	return b
 }
 
-// GetState returns the current state and term
 func (node *RaftNode) GetState() (NodeState, int64) {
 	node.mtx.Lock()
 	defer node.mtx.Unlock()
 	return node.state, node.currentTerm
 }
 
-// IsLeader returns whether this node is currently the leader
 func (node *RaftNode) IsLeader() bool {
 	node.mtx.Lock()
 	defer node.mtx.Unlock()
 	return node.state == Leader
 }
 
-// getLastLogIndex returns the index of the last log entry
 func (node *RaftNode) getLastLogIndex() int64 {
 	return int64(len(node.log)) - 1
 }
 
-func (node *RaftNode) getLeader() string {
+func (node *RaftNode) GetLeader() string {
 	node.mtx.Lock()
 	defer node.mtx.Unlock()
 

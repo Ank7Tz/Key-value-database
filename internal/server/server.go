@@ -72,6 +72,12 @@ func (server *RestServer) handleWrite(ctx *gin.Context) {
 	})
 }
 
+func (server *RestServer) handleDelete(ctx *gin.Context) {
+	// key := ctx.Params.ByName("key")
+
+	// err := server.mr
+}
+
 func NewRestServer(mr *raft.MultiRaft) *RestServer {
 	server := &RestServer{
 		engine: gin.Default(),
@@ -80,6 +86,7 @@ func NewRestServer(mr *raft.MultiRaft) *RestServer {
 
 	server.engine.GET("/api/data/:key", server.handleRead)
 	server.engine.PUT("/api/data/:key", server.handleWrite)
+	server.engine.DELETE("/api/data/:key", server.handleDelete)
 
 	return server
 }

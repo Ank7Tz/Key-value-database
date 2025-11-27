@@ -56,7 +56,15 @@ func (s *RaftServer) ForwardWrite(ctx context.Context, req *pb.ForwardWriteReque
 		}, nil
 	}
 
-	logIdx, pchannel, success := raftNode.ProposeCommand(&pb.Command{
+	if !raftNode.IsLeader() {
+		return &pb.ForwardWriteReply{
+			Success:  false,
+			Error:    "not the leader",
+			LeaderId: raftNode.GetLeader(),
+		}, nil
+	}
+
+	logIndex, doneChan, success := raftNode.ProposeCommand(&pb.Command{
 		Op:    "write",
 		Key:   req.Key,
 		Value: req.Value,
@@ -65,25 +73,20 @@ func (s *RaftServer) ForwardWrite(ctx context.Context, req *pb.ForwardWriteReque
 	if !success {
 		return &pb.ForwardWriteReply{
 			Success:  false,
-			Error:    "not the leader",
-			LeaderId: raftNode.getLeader(),
+			Error:    "leadership lost",
+			LeaderId: raftNode.GetLeader(),
 		}, nil
 	}
 
 	select {
-	case <-pchannel:
+	case <-doneChan:
 		return &pb.ForwardWriteReply{
 			Success: true,
 		}, nil
 	case <-time.After(5 * time.Second):
 		return &pb.ForwardWriteReply{
 			Success: false,
-			Error:   fmt.Sprintf("timeout waiting for commit at index %d", logIdx),
-		}, nil
-	case <-ctx.Done():
-		return &pb.ForwardWriteReply{
-			Success: false,
-			Error:   "request cancelled",
+			Error:   fmt.Sprintf("timeout waiting for commit at index %d", logIndex),
 		}, nil
 	}
 }
@@ -101,7 +104,7 @@ func (s *RaftServer) ForwardRead(ctx context.Context, req *pb.ForwardReadRequest
 		return &pb.ForwardReadReply{
 			Success:  false,
 			Error:    "not the leader",
-			LeaderId: raftNode.getLeader(),
+			LeaderId: raftNode.GetLeader(),
 		}, nil
 	}
 
@@ -117,6 +120,49 @@ func (s *RaftServer) ForwardRead(ctx context.Context, req *pb.ForwardReadRequest
 		Success: true,
 		Value:   value,
 	}, nil
+}
+
+func (s *RaftServer) ForwardDelete(ctx context.Context, req *pb.ForwardDeleteRequest) (*pb.ForwardDeleteReply, error) {
+	raftNode, exists := s.RaftGroups[req.ShardId]
+	if !exists {
+		return &pb.ForwardDeleteReply{
+			Success: false,
+			Error:   "shard not found on this node",
+		}, nil
+	}
+
+	if !raftNode.IsLeader() {
+		return &pb.ForwardDeleteReply{
+			Success:  false,
+			Error:    "not the leader",
+			LeaderId: raftNode.GetLeader(),
+		}, nil
+	}
+
+	logIndex, doneChan, success := raftNode.ProposeCommand(&pb.Command{
+		Op:  "delete",
+		Key: req.Key,
+	})
+
+	if !success {
+		return &pb.ForwardDeleteReply{
+			Success:  false,
+			Error:    "leadership lost",
+			LeaderId: raftNode.GetLeader(),
+		}, nil
+	}
+
+	select {
+	case <-doneChan:
+		return &pb.ForwardDeleteReply{
+			Success: true,
+		}, nil
+	case <-time.After(5 * time.Second):
+		return &pb.ForwardDeleteReply{
+			Success: false,
+			Error:   fmt.Sprintf("timeout waiting for commit at index %d", logIndex),
+		}, nil
+	}
 }
 
 type RaftClient struct {
@@ -174,6 +220,18 @@ func (c *RaftClient) ForwardRead(shardId, key string) (*pb.ForwardReadReply, err
 	}
 
 	return c.Client.ForwardRead(ctx, req)
+}
+
+func (c *RaftClient) ForwardDelete(shardId, key string) (*pb.ForwardDeleteReply, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	req := &pb.ForwardDeleteRequest{
+		ShardId: shardId,
+		Key:     key,
+	}
+
+	return c.Client.ForwardDelete(ctx, req)
 }
 
 type MultiRaft struct {
@@ -312,7 +370,7 @@ func (mr *MultiRaft) Write(key string, value []byte) error {
 		})
 
 		if !success {
-			leaderId := raftNode.getLeader()
+			leaderId := raftNode.GetLeader()
 			if leaderId == "" {
 				return fmt.Errorf("no leader available for shard %s", shardId)
 			}
@@ -389,7 +447,7 @@ func (mr *MultiRaft) Read(key string) ([]byte, error) {
 		raftNode := mr.raftGroups[shardId]
 
 		if !raftNode.IsLeader() {
-			leaderId := raftNode.getLeader()
+			leaderId := raftNode.GetLeader()
 			if leaderId == "" {
 				return nil, fmt.Errorf("no leader available for shard %s", shardId)
 			}
@@ -446,6 +504,111 @@ func (mr *MultiRaft) Read(key string) ([]byte, error) {
 
 	return nil, fmt.Errorf("failed to read from any node holding shard %s", shardId)
 }
+
+func (mr *MultiRaft) Delete(key string) error {
+	shardId := mr.ch.GetShardIdForKey(key)
+	nodesHoldingData := mr.ch.GetPhysicalNodesForShardId(shardId)
+
+	contains := false
+
+	for _, node := range nodesHoldingData {
+		if mr.nodeId == node {
+			contains = true
+			break
+		}
+	}
+
+	if contains {
+		raftNode := mr.raftGroups[shardId]
+
+		if !raftNode.IsLeader() {
+			leaderNodeId := raftNode.GetLeader()
+			if leaderNodeId == "" {
+				return fmt.Errorf("no leader found for group %s", shardId)
+			}
+
+			client, exists := mr.raftClients[leaderNodeId]
+			if !exists {
+				return fmt.Errorf("no client connection for leader (%s)", leaderNodeId)
+			}
+
+			reply, err := client.ForwardDelete(shardId, key)
+			if err != nil {
+				return fmt.Errorf("failed to forward delete to leader: %s", err)
+			}
+
+			if !reply.Success {
+				return fmt.Errorf("delete failed on leader: %s", reply.Error)
+			}
+
+			return nil
+		}
+
+		logIndex, doneChan, success := raftNode.ProposeCommand(&pb.Command{
+			Op:  "delete",
+			Key: key,
+		})
+
+		if !success {
+			return fmt.Errorf("leadership lost")
+		}
+
+		select {
+		case <-time.After(5 * time.Second):
+			return fmt.Errorf("timeout waiting for commit at index %d", logIndex)
+		case <-doneChan:
+			return nil
+		}
+	} else {
+		for _, nodeId := range nodesHoldingData {
+			client, exists := mr.raftClients[nodeId]
+
+			if !exists {
+				continue
+			}
+
+			reply, err := client.ForwardDelete(shardId, key)
+
+			if err != nil {
+				continue
+			}
+
+			if reply.Success {
+				return nil
+			}
+
+			if reply.LeaderId != "" && reply.LeaderId != mr.nodeId {
+				leaderClient, exists := mr.raftClients[reply.LeaderId]
+				if exists {
+					reply, err := leaderClient.ForwardDelete(shardId, key)
+					if err == nil && reply.Success {
+						return nil
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// func (mr *MultiRaft) Delete(key string) error {
+// 	shardId := mr.ch.GetShardIdForKey(key)
+
+// 	nodesHoldingData := mr.ch.GetPhysicalNodesForShardId(shardId)
+// 	contains := false
+// 	for _, nodes := nodesHoldingData {
+// 		if (mr.nodeId == nodes) {
+// 			contains = true
+// 			break
+// 		}
+// 	}
+
+// 	if contains {
+// 		RaftNode := mr.raftGroups[shardId]
+
+// 	}
+// }
 
 func (mr *MultiRaft) StartGrpcServer(address string) error {
 	lis, err := net.Listen("tcp", address)

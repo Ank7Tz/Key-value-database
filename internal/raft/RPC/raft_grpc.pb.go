@@ -23,6 +23,7 @@ const (
 	Raft_SendRequestVote_FullMethodName   = "/raftRPC.Raft/SendRequestVote"
 	Raft_ForwardWrite_FullMethodName      = "/raftRPC.Raft/ForwardWrite"
 	Raft_ForwardRead_FullMethodName       = "/raftRPC.Raft/ForwardRead"
+	Raft_ForwardDelete_FullMethodName     = "/raftRPC.Raft/ForwardDelete"
 )
 
 // RaftClient is the client API for Raft service.
@@ -33,6 +34,7 @@ type RaftClient interface {
 	SendRequestVote(ctx context.Context, in *RequestVote, opts ...grpc.CallOption) (*RequestVoteReply, error)
 	ForwardWrite(ctx context.Context, in *ForwardWriteRequest, opts ...grpc.CallOption) (*ForwardWriteReply, error)
 	ForwardRead(ctx context.Context, in *ForwardReadRequest, opts ...grpc.CallOption) (*ForwardReadReply, error)
+	ForwardDelete(ctx context.Context, in *ForwardDeleteRequest, opts ...grpc.CallOption) (*ForwardDeleteReply, error)
 }
 
 type raftClient struct {
@@ -83,6 +85,16 @@ func (c *raftClient) ForwardRead(ctx context.Context, in *ForwardReadRequest, op
 	return out, nil
 }
 
+func (c *raftClient) ForwardDelete(ctx context.Context, in *ForwardDeleteRequest, opts ...grpc.CallOption) (*ForwardDeleteReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForwardDeleteReply)
+	err := c.cc.Invoke(ctx, Raft_ForwardDelete_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RaftServer is the server API for Raft service.
 // All implementations must embed UnimplementedRaftServer
 // for forward compatibility.
@@ -91,6 +103,7 @@ type RaftServer interface {
 	SendRequestVote(context.Context, *RequestVote) (*RequestVoteReply, error)
 	ForwardWrite(context.Context, *ForwardWriteRequest) (*ForwardWriteReply, error)
 	ForwardRead(context.Context, *ForwardReadRequest) (*ForwardReadReply, error)
+	ForwardDelete(context.Context, *ForwardDeleteRequest) (*ForwardDeleteReply, error)
 	mustEmbedUnimplementedRaftServer()
 }
 
@@ -112,6 +125,9 @@ func (UnimplementedRaftServer) ForwardWrite(context.Context, *ForwardWriteReques
 }
 func (UnimplementedRaftServer) ForwardRead(context.Context, *ForwardReadRequest) (*ForwardReadReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ForwardRead not implemented")
+}
+func (UnimplementedRaftServer) ForwardDelete(context.Context, *ForwardDeleteRequest) (*ForwardDeleteReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ForwardDelete not implemented")
 }
 func (UnimplementedRaftServer) mustEmbedUnimplementedRaftServer() {}
 func (UnimplementedRaftServer) testEmbeddedByValue()              {}
@@ -206,6 +222,24 @@ func _Raft_ForwardRead_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Raft_ForwardDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForwardDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftServer).ForwardDelete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Raft_ForwardDelete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftServer).ForwardDelete(ctx, req.(*ForwardDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Raft_ServiceDesc is the grpc.ServiceDesc for Raft service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +262,10 @@ var Raft_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ForwardRead",
 			Handler:    _Raft_ForwardRead_Handler,
+		},
+		{
+			MethodName: "ForwardDelete",
+			Handler:    _Raft_ForwardDelete_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

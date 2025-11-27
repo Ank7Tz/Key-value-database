@@ -661,6 +661,118 @@ func (x *ForwardReadReply) GetLeaderId() string {
 	return ""
 }
 
+type ForwardDeleteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ShardId       string                 `protobuf:"bytes,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForwardDeleteRequest) Reset() {
+	*x = ForwardDeleteRequest{}
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForwardDeleteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForwardDeleteRequest) ProtoMessage() {}
+
+func (x *ForwardDeleteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForwardDeleteRequest.ProtoReflect.Descriptor instead.
+func (*ForwardDeleteRequest) Descriptor() ([]byte, []int) {
+	return file_internal_raft_RPC_raft_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ForwardDeleteRequest) GetShardId() string {
+	if x != nil {
+		return x.ShardId
+	}
+	return ""
+}
+
+func (x *ForwardDeleteRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type ForwardDeleteReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	LeaderId      string                 `protobuf:"bytes,3,opt,name=leader_id,json=leaderId,proto3" json:"leader_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForwardDeleteReply) Reset() {
+	*x = ForwardDeleteReply{}
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForwardDeleteReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForwardDeleteReply) ProtoMessage() {}
+
+func (x *ForwardDeleteReply) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_raft_RPC_raft_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForwardDeleteReply.ProtoReflect.Descriptor instead.
+func (*ForwardDeleteReply) Descriptor() ([]byte, []int) {
+	return file_internal_raft_RPC_raft_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ForwardDeleteReply) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *ForwardDeleteReply) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ForwardDeleteReply) GetLeaderId() string {
+	if x != nil {
+		return x.LeaderId
+	}
+	return ""
+}
+
 var File_internal_raft_RPC_raft_proto protoreflect.FileDescriptor
 
 const file_internal_raft_RPC_raft_proto_rawDesc = "" +
@@ -710,12 +822,20 @@ const file_internal_raft_RPC_raft_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x12\x14\n" +
 	"\x05value\x18\x03 \x01(\fR\x05value\x12\x1b\n" +
-	"\tleader_id\x18\x04 \x01(\tR\bleaderId2\xb4\x02\n" +
+	"\tleader_id\x18\x04 \x01(\tR\bleaderId\"C\n" +
+	"\x14ForwardDeleteRequest\x12\x19\n" +
+	"\bshard_id\x18\x01 \x01(\tR\ashardId\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\"a\n" +
+	"\x12ForwardDeleteReply\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x12\x1b\n" +
+	"\tleader_id\x18\x03 \x01(\tR\bleaderId2\x83\x03\n" +
 	"\x04Raft\x12Q\n" +
 	"\x11SendAppendEntries\x12\x1d.raftRPC.AppendEntriesRequest\x1a\x1b.raftRPC.AppendEntriesReply\"\x00\x12D\n" +
 	"\x0fSendRequestVote\x12\x14.raftRPC.RequestVote\x1a\x19.raftRPC.RequestVoteReply\"\x00\x12J\n" +
 	"\fForwardWrite\x12\x1c.raftRPC.ForwardWriteRequest\x1a\x1a.raftRPC.ForwardWriteReply\"\x00\x12G\n" +
-	"\vForwardRead\x12\x1b.raftRPC.ForwardReadRequest\x1a\x19.raftRPC.ForwardReadReply\"\x00B#Z!key_value_store/internal/raft/RPCb\x06proto3"
+	"\vForwardRead\x12\x1b.raftRPC.ForwardReadRequest\x1a\x19.raftRPC.ForwardReadReply\"\x00\x12M\n" +
+	"\rForwardDelete\x12\x1d.raftRPC.ForwardDeleteRequest\x1a\x1b.raftRPC.ForwardDeleteReply\"\x00B#Z!key_value_store/internal/raft/RPCb\x06proto3"
 
 var (
 	file_internal_raft_RPC_raft_proto_rawDescOnce sync.Once
@@ -729,7 +849,7 @@ func file_internal_raft_RPC_raft_proto_rawDescGZIP() []byte {
 	return file_internal_raft_RPC_raft_proto_rawDescData
 }
 
-var file_internal_raft_RPC_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_internal_raft_RPC_raft_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_internal_raft_RPC_raft_proto_goTypes = []any{
 	(*Command)(nil),              // 0: raftRPC.Command
 	(*LogEntry)(nil),             // 1: raftRPC.LogEntry
@@ -741,23 +861,27 @@ var file_internal_raft_RPC_raft_proto_goTypes = []any{
 	(*ForwardWriteReply)(nil),    // 7: raftRPC.ForwardWriteReply
 	(*ForwardReadRequest)(nil),   // 8: raftRPC.ForwardReadRequest
 	(*ForwardReadReply)(nil),     // 9: raftRPC.ForwardReadReply
+	(*ForwardDeleteRequest)(nil), // 10: raftRPC.ForwardDeleteRequest
+	(*ForwardDeleteReply)(nil),   // 11: raftRPC.ForwardDeleteReply
 }
 var file_internal_raft_RPC_raft_proto_depIdxs = []int32{
-	0, // 0: raftRPC.LogEntry.command:type_name -> raftRPC.Command
-	1, // 1: raftRPC.AppendEntriesRequest.entries:type_name -> raftRPC.LogEntry
-	2, // 2: raftRPC.Raft.SendAppendEntries:input_type -> raftRPC.AppendEntriesRequest
-	4, // 3: raftRPC.Raft.SendRequestVote:input_type -> raftRPC.RequestVote
-	6, // 4: raftRPC.Raft.ForwardWrite:input_type -> raftRPC.ForwardWriteRequest
-	8, // 5: raftRPC.Raft.ForwardRead:input_type -> raftRPC.ForwardReadRequest
-	3, // 6: raftRPC.Raft.SendAppendEntries:output_type -> raftRPC.AppendEntriesReply
-	5, // 7: raftRPC.Raft.SendRequestVote:output_type -> raftRPC.RequestVoteReply
-	7, // 8: raftRPC.Raft.ForwardWrite:output_type -> raftRPC.ForwardWriteReply
-	9, // 9: raftRPC.Raft.ForwardRead:output_type -> raftRPC.ForwardReadReply
-	6, // [6:10] is the sub-list for method output_type
-	2, // [2:6] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	0,  // 0: raftRPC.LogEntry.command:type_name -> raftRPC.Command
+	1,  // 1: raftRPC.AppendEntriesRequest.entries:type_name -> raftRPC.LogEntry
+	2,  // 2: raftRPC.Raft.SendAppendEntries:input_type -> raftRPC.AppendEntriesRequest
+	4,  // 3: raftRPC.Raft.SendRequestVote:input_type -> raftRPC.RequestVote
+	6,  // 4: raftRPC.Raft.ForwardWrite:input_type -> raftRPC.ForwardWriteRequest
+	8,  // 5: raftRPC.Raft.ForwardRead:input_type -> raftRPC.ForwardReadRequest
+	10, // 6: raftRPC.Raft.ForwardDelete:input_type -> raftRPC.ForwardDeleteRequest
+	3,  // 7: raftRPC.Raft.SendAppendEntries:output_type -> raftRPC.AppendEntriesReply
+	5,  // 8: raftRPC.Raft.SendRequestVote:output_type -> raftRPC.RequestVoteReply
+	7,  // 9: raftRPC.Raft.ForwardWrite:output_type -> raftRPC.ForwardWriteReply
+	9,  // 10: raftRPC.Raft.ForwardRead:output_type -> raftRPC.ForwardReadReply
+	11, // 11: raftRPC.Raft.ForwardDelete:output_type -> raftRPC.ForwardDeleteReply
+	7,  // [7:12] is the sub-list for method output_type
+	2,  // [2:7] is the sub-list for method input_type
+	2,  // [2:2] is the sub-list for extension type_name
+	2,  // [2:2] is the sub-list for extension extendee
+	0,  // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_internal_raft_RPC_raft_proto_init() }
@@ -771,7 +895,7 @@ func file_internal_raft_RPC_raft_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_raft_RPC_raft_proto_rawDesc), len(file_internal_raft_RPC_raft_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
