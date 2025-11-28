@@ -10,6 +10,7 @@ import (
 type ConsistentHash interface {
 	GetShardIdForKey(key string) string
 	GetPhysicalNodesForShardId(shardIf string) []string
+	GetMapping() map[string][]string
 }
 
 type hasher struct{}
@@ -99,4 +100,8 @@ func (c *ConsistentHashImpl) GetShardIdForKey(key string) string {
 
 func (c *ConsistentHashImpl) GetPhysicalNodesForShardId(shardId string) []string {
 	return c.shardToNodes[shardId]
+}
+
+func (c *ConsistentHashImpl) GetMapping() map[string][]string {
+	return c.shardToNodes
 }

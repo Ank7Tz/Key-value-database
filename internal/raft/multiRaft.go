@@ -592,23 +592,43 @@ func (mr *MultiRaft) Delete(key string) error {
 	return nil
 }
 
-// func (mr *MultiRaft) Delete(key string) error {
-// 	shardId := mr.ch.GetShardIdForKey(key)
+type StatsResponse struct {
+	ShardMapping map[string][]string
+	ShardGroups  map[string]*ShardGroupContent `json:"shardGroups"`
+}
 
-// 	nodesHoldingData := mr.ch.GetPhysicalNodesForShardId(shardId)
-// 	contains := false
-// 	for _, nodes := nodesHoldingData {
-// 		if (mr.nodeId == nodes) {
-// 			contains = true
-// 			break
-// 		}
-// 	}
+type ShardGroupContent struct {
+	Store    map[string]string `json:"store"`
+	Replicas *[]string         `json:"replicas"`
+}
 
-// 	if contains {
-// 		RaftNode := mr.raftGroups[shardId]
+func (mr *MultiRaft) Stats() *StatsResponse {
+	content := mr.KVStore.GetAll()
+	shardGroups := map[string]*ShardGroupContent{}
 
-// 	}
-// }
+	for key, value := range content {
+		shardId := mr.ch.GetShardIdForKey(key)
+		sgc, exists := shardGroups[shardId]
+		if !exists {
+			replicas := mr.ch.GetPhysicalNodesForShardId(shardId)
+			shardGroups[shardId] = &ShardGroupContent{
+				Store:    make(map[string]string),
+				Replicas: &replicas,
+			}
+
+			sgc = shardGroups[shardId]
+		}
+
+		sgc.Store[key] = string(value)
+	}
+
+	response := &StatsResponse{
+		ShardMapping: mr.ch.GetMapping(),
+		ShardGroups:  shardGroups,
+	}
+
+	return response
+}
 
 func (mr *MultiRaft) StartGrpcServer(address string) error {
 	lis, err := net.Listen("tcp", address)

@@ -85,7 +85,7 @@ func NewRaftNode(id string, groupId string, peers []string, clients map[string]R
 		lastApplied:      0,
 		KVStore:          store,
 		applyCh:          make(chan pb.LogEntry, 100),
-		heartBeatTimeout: 1000 * time.Millisecond,
+		heartBeatTimeout: 50 * time.Millisecond,
 		pendingCommands:  make(map[int64]chan bool),
 		clients:          clients,
 		persister:        persister,
@@ -99,8 +99,6 @@ func NewRaftNode(id string, groupId string, peers []string, clients map[string]R
 		log.Printf("Node %s restored state: term=%d, log entries=%d",
 			id, node.currentTerm, len(node.log))
 
-		// Replay log to rebuild state
-		// node.replayLog()
 	}
 
 	node.resetElectionTimeout()
@@ -109,7 +107,7 @@ func NewRaftNode(id string, groupId string, peers []string, clients map[string]R
 }
 
 func (node *RaftNode) resetElectionTimeout() {
-	node.electionTimeout = time.Duration(1000+rand.Intn(500)) * time.Millisecond
+	node.electionTimeout = time.Duration(300+rand.Intn(300)) * time.Millisecond
 	node.lastHeartBeat = time.Now()
 }
 
@@ -136,7 +134,7 @@ func (node *RaftNode) Start() {
 
 func (node *RaftNode) ElectionTimer() {
 	for {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 
 		node.mtx.Lock()
 		if node.state == Leader {

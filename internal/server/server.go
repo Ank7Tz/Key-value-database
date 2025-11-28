@@ -23,6 +23,11 @@ type WriteResponse struct {
 	Error   string `json:"error,omitempty"`
 }
 
+type DeleteResponse struct {
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
+}
+
 type RestServer struct {
 	engine *gin.Engine
 	mr     *raft.MultiRaft
@@ -73,9 +78,25 @@ func (server *RestServer) handleWrite(ctx *gin.Context) {
 }
 
 func (server *RestServer) handleDelete(ctx *gin.Context) {
-	// key := ctx.Params.ByName("key")
+	key := ctx.Params.ByName("key")
 
-	// err := server.mr
+	err := server.mr.Delete(key)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, DeleteResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, DeleteResponse{
+		Success: true,
+	})
+}
+
+func (server *RestServer) getStats(ctx *gin.Context) {
+	response := server.mr.Stats()
+	ctx.JSON(http.StatusOK, response)
 }
 
 func NewRestServer(mr *raft.MultiRaft) *RestServer {
@@ -87,6 +108,7 @@ func NewRestServer(mr *raft.MultiRaft) *RestServer {
 	server.engine.GET("/api/data/:key", server.handleRead)
 	server.engine.PUT("/api/data/:key", server.handleWrite)
 	server.engine.DELETE("/api/data/:key", server.handleDelete)
+	server.engine.GET("/api/data/stats", server.getStats)
 
 	return server
 }

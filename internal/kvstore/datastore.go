@@ -10,6 +10,7 @@ type Store interface {
 	Read(key string) ([]byte, error)
 	Write(key string, value []byte) error
 	Delete(key string) error
+	GetAll() map[string][]byte
 	Close() error
 }
 
@@ -43,6 +44,10 @@ func (d *InMemDataStore) Delete(key string) error {
 
 func (d *InMemDataStore) Close() error {
 	// nothing
+	return nil
+}
+
+func (d *InMemDataStore) GetAll() map[string][]byte {
 	return nil
 }
 
@@ -95,4 +100,21 @@ func (l *LevelDBStore) Close() error {
 		return l.db.Close()
 	}
 	return nil
+}
+
+func (l *LevelDBStore) GetAll() map[string][]byte {
+	response := map[string][]byte{}
+	iter := l.db.NewIterator(nil, nil)
+
+	for iter.Next() {
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+
+		response[string(key)] = value
+	}
+
+	return response
 }
