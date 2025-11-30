@@ -18,3 +18,22 @@ node 4 -
 node 5 - 
 
 ./key_value_store -nodeId=node_5 -raftPort=14000 -peers="node_1#127.0.0.1:10000,node_2#127.0.0.1:11000,node_3#127.0.0.1:12000,node_4#127.0.0.1:13000" -restPort="8004" -shardCount=10
+
+
+
+
+
+
+3 node cluster
+
+node 1 -
+
+./key_value_store -nodeId=node_1 -raftPort=10000 -peers="node_2#127.0.0.1:11000,node_3#127.0.0.1:12000" -restPort="8000" -shardCount=10
+
+node 2 - 
+
+./key_value_store -nodeId=node_2 -raftPort=11000 -peers="node_1#127.0.0.1:10000,node_3#127.0.0.1:12000" -restPort="8001" -shardCount=10
+
+node 3 -
+
+./key_value_store -nodeId=node_3 -raftPort=12000 -peers="node_1#127.0.0.1:10000,node_2#127.0.0.1:11000" -restPort="8002" -shardCount=10

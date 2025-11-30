@@ -59,6 +59,7 @@ message ForwardWriteReply {
 message ForwardReadRequest {
     string shard_id = 1;
     string key = 2;
+    bool strong_consistency = 3;
 }
 
 message ForwardReadReply {

@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"key_value_store/internal/raft"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,12 +40,30 @@ type RestServer struct {
 func (server *RestServer) handleRead(ctx *gin.Context) {
 	key := ctx.Param("key")
 
-	value, err := server.mr.Read(key)
+	sc := ctx.DefaultQuery("strong_consistency", "false")
+
+	flag, err := strconv.ParseBool(sc)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, ReadResponse{
+		ctx.JSON(http.StatusBadRequest, ReadResponse{
 			Success: false,
 			Error:   err.Error(),
 		})
+		return
+	}
+
+	value, err := server.mr.Read(key, flag)
+	if err != nil {
+		if strings.Contains(err.Error(), "key not found") {
+			ctx.JSON(http.StatusNotFound, ReadResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, ReadResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+		}
 		return
 	}
 
@@ -82,10 +104,17 @@ func (server *RestServer) handleDelete(ctx *gin.Context) {
 
 	err := server.mr.Delete(key)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, DeleteResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
+		if strings.Contains(err.Error(), "key not found") {
+			ctx.JSON(http.StatusNotFound, DeleteResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, DeleteResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+		}
 		return
 	}
 
@@ -99,6 +128,15 @@ func (server *RestServer) getStats(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+func (server *RestServer) Stop(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, "")
+	go func() {
+		time.Sleep(2 * time.Second)
+		fmt.Println("stopping server")
+		os.Exit(1)
+	}()
+}
+
 func NewRestServer(mr *raft.MultiRaft) *RestServer {
 	server := &RestServer{
 		engine: gin.Default(),
@@ -109,6 +147,7 @@ func NewRestServer(mr *raft.MultiRaft) *RestServer {
 	server.engine.PUT("/api/data/:key", server.handleWrite)
 	server.engine.DELETE("/api/data/:key", server.handleDelete)
 	server.engine.GET("/api/data/stats", server.getStats)
+	server.engine.GET("/api/stop", server.Stop)
 
 	return server
 }

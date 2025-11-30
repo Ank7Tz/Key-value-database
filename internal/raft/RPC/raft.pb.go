@@ -542,11 +542,12 @@ func (x *ForwardWriteReply) GetLeaderId() string {
 }
 
 type ForwardReadRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ShardId       string                 `protobuf:"bytes,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
-	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ShardId           string                 `protobuf:"bytes,1,opt,name=shard_id,json=shardId,proto3" json:"shard_id,omitempty"`
+	Key               string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	StrongConsistency bool                   `protobuf:"varint,3,opt,name=strong_consistency,json=strongConsistency,proto3" json:"strong_consistency,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ForwardReadRequest) Reset() {
@@ -591,6 +592,13 @@ func (x *ForwardReadRequest) GetKey() string {
 		return x.Key
 	}
 	return ""
+}
+
+func (x *ForwardReadRequest) GetStrongConsistency() bool {
+	if x != nil {
+		return x.StrongConsistency
+	}
+	return false
 }
 
 type ForwardReadReply struct {
@@ -814,10 +822,11 @@ const file_internal_raft_RPC_raft_proto_rawDesc = "" +
 	"\x11ForwardWriteReply\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x12\x1b\n" +
-	"\tleader_id\x18\x03 \x01(\tR\bleaderId\"A\n" +
+	"\tleader_id\x18\x03 \x01(\tR\bleaderId\"p\n" +
 	"\x12ForwardReadRequest\x12\x19\n" +
 	"\bshard_id\x18\x01 \x01(\tR\ashardId\x12\x10\n" +
-	"\x03key\x18\x02 \x01(\tR\x03key\"u\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12-\n" +
+	"\x12strong_consistency\x18\x03 \x01(\bR\x11strongConsistency\"u\n" +
 	"\x10ForwardReadReply\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x12\x14\n" +

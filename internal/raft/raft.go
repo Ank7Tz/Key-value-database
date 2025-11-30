@@ -355,10 +355,12 @@ func (node *RaftNode) applyToStateMachine(entry *pb.LogEntry) {
 	switch entry.Command.Op {
 	case "write":
 		node.KVStore.Write(entry.Command.Key, entry.Command.Value)
-		log.Printf("Node %s applied: WRITE %s=%s", node.Id, entry.Command.Key, entry.Command.Value)
+		log.Printf("Node %s (shard: %s) applied: WRITE %s=%s", node.Id, node.groupId, entry.Command.Key, entry.Command.Value)
 	case "delete":
 		node.KVStore.Delete(entry.Command.Key)
-		log.Printf("Node %s applied: DELETE %s", node.Id, entry.Command.Key)
+		log.Printf("Node %s (shard: %s) applied: DELETE %s", node.Id, node.groupId, entry.Command.Key)
+	case "noops":
+		log.Printf("Node %s (shard: %s) applied: noops", node.Id, node.groupId)
 	}
 }
 

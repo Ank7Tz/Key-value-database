@@ -8,6 +8,7 @@ import (
 	pb "key_value_store/internal/raft/RPC"
 	"log"
 	"net"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -17,6 +18,7 @@ import (
 
 type RaftServer struct {
 	pb.UnimplementedRaftServer
+	// shards held by node (all raftNode point to the same raftNode)
 	RaftGroups map[string]*RaftNode
 }
 
@@ -106,6 +108,27 @@ func (s *RaftServer) ForwardRead(ctx context.Context, req *pb.ForwardReadRequest
 			Error:    "not the leader",
 			LeaderId: raftNode.GetLeader(),
 		}, nil
+	}
+
+	if req.StrongConsistency {
+		logIdx, pchannel, success := raftNode.ProposeCommand(&pb.Command{
+			Op: "noops",
+		})
+		if success {
+			select {
+			case <-pchannel:
+				value, err := raftNode.KVStore.Read(req.Key)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read key %s: %w", req.Key, err)
+				}
+				return &pb.ForwardReadReply{
+					Success: true,
+					Value:   value,
+				}, nil
+			case <-time.After(5 * time.Second):
+				return nil, fmt.Errorf("timeout waiting for strong consistent read (logindex: %d)", logIdx)
+			}
+		}
 	}
 
 	value, err := raftNode.KVStore.Read(req.Key)
@@ -210,13 +233,14 @@ func (c *RaftClient) ForwardWrite(shardId, key string, value []byte) (*pb.Forwar
 	return c.Client.ForwardWrite(ctx, req)
 }
 
-func (c *RaftClient) ForwardRead(shardId, key string) (*pb.ForwardReadReply, error) {
+func (c *RaftClient) ForwardRead(shardId, key string, sc bool) (*pb.ForwardReadReply, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	req := &pb.ForwardReadRequest{
-		ShardId: shardId,
-		Key:     key,
+		ShardId:           shardId,
+		Key:               key,
+		StrongConsistency: sc,
 	}
 
 	return c.Client.ForwardRead(ctx, req)
@@ -430,7 +454,7 @@ func (mr *MultiRaft) Write(key string, value []byte) error {
 	}
 }
 
-func (mr *MultiRaft) Read(key string) ([]byte, error) {
+func (mr *MultiRaft) Read(key string, sc bool) ([]byte, error) {
 	shardId := mr.ch.GetShardIdForKey(key)
 
 	nodesHoldingData := mr.ch.GetPhysicalNodesForShardId(shardId)
@@ -446,6 +470,24 @@ func (mr *MultiRaft) Read(key string) ([]byte, error) {
 	if contains {
 		raftNode := mr.raftGroups[shardId]
 
+		if sc {
+			logIdx, pchannel, success := raftNode.ProposeCommand(&pb.Command{
+				Op: "noops",
+			})
+			if success {
+				select {
+				case <-pchannel:
+					value, err := mr.KVStore.Read(key)
+					if err != nil {
+						return nil, fmt.Errorf("failed to read key %s: %w", key, err)
+					}
+					return value, nil
+				case <-time.After(5 * time.Second):
+					return nil, fmt.Errorf("timeout waiting for strong consistent read (logindex: %d)", logIdx)
+				}
+			}
+		}
+
 		if !raftNode.IsLeader() {
 			leaderId := raftNode.GetLeader()
 			if leaderId == "" {
@@ -457,7 +499,7 @@ func (mr *MultiRaft) Read(key string) ([]byte, error) {
 				return nil, fmt.Errorf("no client connection to leader %s", leaderId)
 			}
 
-			reply, err := client.ForwardRead(shardId, key)
+			reply, err := client.ForwardRead(shardId, key, sc)
 			if err != nil {
 				return nil, fmt.Errorf("failed to forward read to leader: %w", err)
 			}
@@ -482,7 +524,7 @@ func (mr *MultiRaft) Read(key string) ([]byte, error) {
 			continue
 		}
 
-		reply, err := client.ForwardRead(shardId, key)
+		reply, err := client.ForwardRead(shardId, key, sc)
 		if err != nil {
 			continue
 		}
@@ -491,12 +533,20 @@ func (mr *MultiRaft) Read(key string) ([]byte, error) {
 			return reply.Value, nil
 		}
 
+		if strings.Contains(reply.Error, "key not found") {
+			return nil, fmt.Errorf("%s", reply.Error)
+		}
+
 		if reply.LeaderId != "" && reply.LeaderId != nodeId {
 			leaderClient, exists := mr.raftClients[reply.LeaderId]
 			if exists {
-				reply, err = leaderClient.ForwardRead(shardId, key)
+				reply, err = leaderClient.ForwardRead(shardId, key, sc)
 				if err == nil && reply.Success {
 					return reply.Value, nil
+				} else {
+					if strings.Contains(reply.Error, "key not found") {
+						return nil, fmt.Errorf("%s", reply.Error)
+					}
 				}
 			}
 		}
@@ -577,12 +627,20 @@ func (mr *MultiRaft) Delete(key string) error {
 				return nil
 			}
 
+			if strings.Contains(reply.Error, "key not found") {
+				return fmt.Errorf("%s", reply.Error)
+			}
+
 			if reply.LeaderId != "" && reply.LeaderId != mr.nodeId {
 				leaderClient, exists := mr.raftClients[reply.LeaderId]
 				if exists {
 					reply, err := leaderClient.ForwardDelete(shardId, key)
 					if err == nil && reply.Success {
 						return nil
+					} else {
+						if strings.Contains(reply.Error, "key not found") {
+							return fmt.Errorf("%s", reply.Error)
+						}
 					}
 				}
 			}
@@ -600,6 +658,7 @@ type StatsResponse struct {
 type ShardGroupContent struct {
 	Store    map[string]string `json:"store"`
 	Replicas *[]string         `json:"replicas"`
+	Leader   string            `json:"leader"`
 }
 
 func (mr *MultiRaft) Stats() *StatsResponse {
@@ -615,8 +674,14 @@ func (mr *MultiRaft) Stats() *StatsResponse {
 				Store:    make(map[string]string),
 				Replicas: &replicas,
 			}
-
 			sgc = shardGroups[shardId]
+
+			// sgc.Leader = mr.raftGroups[shardId].GetLeader()
+			if mr.raftGroups[shardId] != nil {
+				sgc.Leader = mr.raftGroups[shardId].GetLeader()
+			} else {
+				sgc.Leader = fmt.Sprintf("missing for shard - %s", shardId)
+			}
 		}
 
 		sgc.Store[key] = string(value)

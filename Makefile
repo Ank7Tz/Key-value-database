@@ -4,7 +4,7 @@
 BINARY_NAME=key_value_store
 
 # Build the project
-build: proto
+build:
 	go build -o $(BINARY_NAME)
 
 # Generate protobuf code
