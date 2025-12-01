@@ -18,7 +18,6 @@ import (
 
 type RaftServer struct {
 	pb.UnimplementedRaftServer
-	// shards held by node (all raftNode point to the same raftNode)
 	RaftGroups map[string]*RaftNode
 }
 
