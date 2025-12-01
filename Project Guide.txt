@@ -124,6 +124,9 @@ nodes := map[string]string{
 		"node_5": "10.200.125.79:18004",
 	}
 
+update populate.go if needed at line 17: baseURL := "10.200.125.75:18000"
+Run populate.go using "go run populate.go"
+
 Run case3.go using “go run case3.go”
 
 The program performs – 
@@ -131,7 +134,7 @@ The program performs –
 2.	Finds out which node is the leader for shard_7
 3.	Stops all other nodes except the node that is the leader for shard_7
 4.	Performs weak consistent (stale) reads
-5.	Then Performs strong consistent reads
+5.	Then Performs strong consistent reads (should fail)
 
 
 Performance Test – 

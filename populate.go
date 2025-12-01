@@ -14,7 +14,8 @@ type Payload struct {
 }
 
 func main() {
-	baseURL := "http://localhost:8000/api/data"
+	baseURL := "10.200.125.75:18000"
+	// baseURL := "http://localhost:8000/api/data"
 
 	data := map[string]string{
 		"alice":    "engineer",
