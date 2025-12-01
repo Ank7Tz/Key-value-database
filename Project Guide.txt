@@ -1,0 +1,199 @@
+Project Build steps -
+
+Run - “make”
+It should build the key_value_store executable, Node_id always follows this format – node_(number), eg – node_1, node_48, etc. 
+
+Project Startup Steps
+
+We are running a 5 nodes cluster for evaluation, recommended to open up 5 different ssh sessions into 5 different khoury linux clusters and start application on each
+
+
+Run the commands on the following nodes, if you want to use different servers, please update the command as well.
+
+•	node 1 (10.200.125.75) / linux-075.khoury.northeastern.edu- 
+
+./key_value_store -nodeId=node_1 -raftPort=10000 -peers="node_2#10.200.125.76:11000,node_3#10.200.125.77:12000,node_4#10.200.125.78:13000,node_5#10.200.125.79:14000" -restPort="18000" -shardCount=10
+
+
+•	node 2 (10.200.125.76) / linux-075.khoury.northeastern.edu- 
+
+./key_value_store -nodeId=node_2 -raftPort=11000 -peers="node_1#10.200.125.75:10000,node_3#10.200.125.77:12000,node_4#10.200.125.78:13000,node_5#10.200.125.79:14000" -restPort="18001" -shardCount=10
+
+•	node 3 (10.200.125.77) / linux-075.khoury.northeastern.edu-
+
+./key_value_store -nodeId=node_3 -raftPort=12000 -peers="node_1#10.200.125.75:10000,node_2#10.200.125.76:11000,node_4#10.200.125.78:13000,node_5#10.200.125.79:14000" -restPort="18002" -shardCount=10
+
+•	node 4 (10.200.125.78) / linux-075.khoury.northeastern.edu-
+
+./key_value_store -nodeId=node_4 -raftPort=13000 -peers="node_1#10.200.125.75:10000,node_2#10.200.125.76:11000,node_3#10.200.125.77:12000,node_5#10.200.125.79:14000" -restPort="18003" -shardCount=10
+
+•	node 5 (10.200.125.79) / linux-075.khoury.northeastern.edu- 
+
+./key_value_store -nodeId=node_5 -raftPort=14000 -peers="node_1#10.200.125.75:10000,node_2#10.200.125.76:11000,node_3#10.200.125.77:12000,node_4#10.200.125.78:13000" -restPort="18004" -shardCount=10
+
+
+Curls for manually testing out the APIs (import into postman or bruno or any API client)
+
+Write API - 
+PUT http://localhost:8000/api/data/:key
+Request body - (json):
+{
+	“value”: “sample value”
+}
+
+Example curl 
+curl --request PUT \
+  --url http://10.200.125.75:18000/api/data/key1 \
+  --header 'content-type: application/json' \
+  --data '{
+  "value": "value1"
+}'
+
+Read API - 
+GET http://localhost:8000/api/data/:key
+
+Example curl
+curl --request GET \
+  --url http://localhost:8000/api/data/apple
+
+
+Delete API - 
+DELETE http://localhost:8000/api/data/:key
+
+Example curl
+curl --request DELETE \
+  --url http://localhost:8000/api/data/apple
+
+Basic test –
+
+Update the base url inside the file (basic.go) as needed
+Line 20: baseURL := http://10.200.125.75:18000/api/data
+
+run basic.go using the command - “go run basic.go”
+
+This will perform writes, reads, deletes and reads again to validate
+
+Fault Tolerance tests – 
+
+•	Case 1: 1 server down, all ops should work, bring back the node to sync updates (Manually needs to restart stopped server)
+
+If using different khoury linux servers, please update the case1.go file at line 25 and line 26
+
+normalNode := "10.200.125.75:18000"
+crashNode := "10.200.125.77:18002"
+
+run case1.go using “go run case1.go”
+
+The program performs – 
+1.	Stops the “crashNode” (by calling stop API)
+2.	Writes data into “normalNode”
+3.	Waits for user to bring back the crash node by restarting it (Manual process)
+4.	Performs Reads and validates
+5.	Then clean up the data by deleting what was written
+
+
+•	Case 2: Multiple servers down, shards that have quorum should serve all ops, bring back the nodes to sync updates and make all shards active 
+(Manual intervention needed)
+
+If using different khoury linux servers, please update the case2.go file at line 25-29
+
+node1 := "10.200.125.75:18000"
+node2 := "10.200.125.76:18001"
+node3 := "10.200.125.77:18002"
+node4 := "10.200.125.78:18003"
+node5 := "10.200.125.79:18004"
+
+Run case2.go using “go run case2.go”
+
+The program performs – 
+1.	Stops node 2, 3 & 4
+2.	Performs read operations on node 1 for shard_7 (one of the active shards, since node 1 & 5 are active)
+3.	Cleans up by performing delete operations on node 5
+
+Now bring up the stopped nodes (2, 3 & 4) and run the basic.go using “go run basic.go” to evaluate if cluster is able to operate fully. 
+
+•	Case 3: Bring down 4 nodes, and test if weak consistent reads are working for shards available in the surviving node (No Manual Intervention Needed)
+
+If using different khoury linux servers, please update the case2.go file at line 30-34
+
+nodes := map[string]string{
+		"node_1": "10.200.125.75:18000",
+		"node_2": "10.200.125.76:18001",
+		"node_3": "10.200.125.77:18002",
+		"node_4": "10.200.125.78:18003",
+		"node_5": "10.200.125.79:18004",
+	}
+
+Run case3.go using “go run case3.go”
+
+The program performs – 
+1.	Calls stats API from node_1
+2.	Finds out which node is the leader for shard_7
+3.	Stops all other nodes except the node that is the leader for shard_7
+4.	Performs weak consistent (stale) reads
+5.	Then Performs strong consistent reads
+
+
+Performance Test – 
+
+3 node cluster vs 5 node cluster
+
+To run the performance test program, use performance.go
+
+If testing for 3 nodes, please comment out 2 servers from performance.go and start the cluster again with new configuration (every node having 2 peers)
+Lines - 57 - 61:
+
+nodes := []string{
+		"10.200.125.75:18000",
+		"10.200.125.76:18001",
+		"10.200.125.77:18002",
+		"10.200.125.78:18003",
+		"10.200.125.79:18004",
+	}
+
+
+
+
+
+
+cluster start up flow -
+
+node 1 (10.200.125.75) - 
+
+./key_value_store -nodeId=node_1 -raftPort=10000 -peers="node_2#10.200.125.76:11000,node_3#10.200.125.77:12000,node_4#10.200.125.78:13000,node_5#10.200.125.79:14000" -restPort="18000" -shardCount=10
+
+
+node 2 (10.200.125.76) - 
+
+./key_value_store -nodeId=node_2 -raftPort=11000 -peers="node_1#10.200.125.75:10000,node_3#10.200.125.77:12000,node_4#10.200.125.78:13000,node_5#10.200.125.79:14000" -restPort="18001" -shardCount=10
+
+node 3 (10.200.125.77) -
+
+./key_value_store -nodeId=node_3 -raftPort=12000 -peers="node_1#10.200.125.75:10000,node_2#10.200.125.76:11000,node_4#10.200.125.78:13000,node_5#10.200.125.79:14000" -restPort="18002" -shardCount=10
+
+node 4 (10.200.125.78) -
+
+./key_value_store -nodeId=node_4 -raftPort=13000 -peers="node_1#10.200.125.75:10000,node_2#10.200.125.76:11000,node_3#10.200.125.77:12000,node_5#10.200.125.79:14000" -restPort="18003" -shardCount=10
+
+node 5 (10.200.125.79) - 
+
+./key_value_store -nodeId=node_5 -raftPort=14000 -peers="node_1#10.200.125.75:10000,node_2#10.200.125.76:11000,node_3#10.200.125.77:12000,node_4#10.200.125.78:13000" -restPort="18004" -shardCount=10
+
+############################################################################################################################################################################################################################
+
+3 node cluster - 
+
+node 1 (10.200.125.75) - 
+
+./key_value_store -nodeId=node_1 -raftPort=10000 -peers="node_2#10.200.125.76:11000,node_3#10.200.125.77:12000" -restPort="18000" -shardCount=10
+
+
+node 2 (10.200.125.76) - 
+
+./key_value_store -nodeId=node_2 -raftPort=11000 -peers="node_1#10.200.125.75:10000,node_3#10.200.125.77:12000" -restPort="18001" -shardCount=10
+
+node 3 (10.200.125.77) -
+
+./key_value_store -nodeId=node_3 -raftPort=12000 -peers="node_1#10.200.125.75:10000,node_2#10.200.125.76:11000" -restPort="18002" -shardCount=10
+
+############################################################################################################################################################################################################################
