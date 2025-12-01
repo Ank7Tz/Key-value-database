@@ -23,10 +23,10 @@ type Response struct {
 }
 
 func main() {
-	// normalNode := "10.200.125.75:18000"
-	// crashNode := "10.200.125.77:18002"
-	normalNode := "localhost:8000"
-	crashNode := "localhost:8002"
+	normalNode := "10.200.125.75:18000"
+	crashNode := "10.200.125.77:18002"
+	// normalNode := "localhost:8000"
+	// crashNode := "localhost:8002"
 	writeURL := fmt.Sprintf("http://%s/api/data", normalNode)
 	stopURL := fmt.Sprintf("http://%s/api/stop", crashNode)
 	readURL := fmt.Sprintf("http://%s/api/data", crashNode)

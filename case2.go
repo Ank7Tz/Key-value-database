@@ -28,6 +28,12 @@ func main() {
 	node4 := "10.200.125.78:18003"
 	node5 := "10.200.125.79:18004"
 
+	// node1 := "localhost:8000"
+	// node2 := "localhost:8001"
+	// node3 := "localhost:8002"
+	// node4 := "localhost:8003"
+	// node5 := "localhost:8004"
+
 	client := &http.Client{}
 
 	data := map[string]string{

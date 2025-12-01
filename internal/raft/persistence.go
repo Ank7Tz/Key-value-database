@@ -82,21 +82,3 @@ func (p *Persister) LoadState() (*PersistentState, error) {
 
 	return &state, nil
 }
-
-func (p *Persister) StateSize() int64 {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	info, err := os.Stat(p.stateFile)
-	if err != nil {
-		return 0
-	}
-	return info.Size()
-}
-
-func (p *Persister) Clear() error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	return os.RemoveAll(p.dir)
-}
