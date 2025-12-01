@@ -17,7 +17,8 @@ type Payload struct {
 }
 
 func main() {
-	baseURL := "http://localhost:8000/api/data"
+	baseURL := "http://10.200.125.75:18000/api/data"
+	// baseURL := "http://localhost:8000/api/data"
 
 	data := map[string]string{
 		"alice":    "engineer",
@@ -93,59 +94,7 @@ func main() {
 	}
 	fmt.Println("\nDone populating 40 key-value pairs.")
 
-	time.Sleep(2 * time.Second)
-
-	fmt.Println("=== PHASE 2: READING & VERIFYING DATA (stale semantic read) ===")
-	passed, failed := 0, 0
-
-	for key, expectedValue := range data {
-		url := fmt.Sprintf("%s/%s", baseURL, key)
-
-		resp, err := client.Get(url)
-		if err != nil {
-			fmt.Printf("FAIL: GET %s - error: %v\n", key, err)
-			failed++
-			continue
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			fmt.Printf("FAIL: GET %s - read error: %v\n", key, err)
-			failed++
-			continue
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			fmt.Printf("FAIL: GET %s - status: %d\n", key, resp.StatusCode)
-			failed++
-			continue
-		}
-
-		var result Payload
-		if err := json.Unmarshal(body, &result); err != nil {
-			if string(body) == expectedValue {
-				fmt.Printf("PASS: %s = %s\n", key, expectedValue)
-				passed++
-				continue
-			}
-			fmt.Printf("FAIL: GET %s - parse error: %v (body: %s)\n", key, err, string(body))
-			failed++
-			continue
-		}
-
-		if result.Value == expectedValue {
-			fmt.Printf("PASS: %s = %s\n", key, expectedValue)
-			passed++
-		} else {
-			fmt.Printf("FAIL: %s expected %s, got %s\n", key, expectedValue, result.Value)
-			failed++
-		}
-	}
-
-	fmt.Printf("\nstale semantics Read Results - Passed: %d, Failed: %d\n\n", passed, failed)
-
-	fmt.Println("=== PHASE 2b: READING & VERIFYING DATA (STRONG CONSISTENCY) ===")
+	fmt.Println("=== PHASE 2a: READING & VERIFYING DATA (STRONG CONSISTENCY) ===")
 	strongPassed, strongFailed := 0, 0
 
 	for key, expectedValue := range data {
@@ -194,6 +143,56 @@ func main() {
 	}
 
 	fmt.Printf("\nStrong Read Results - Passed: %d, Failed: %d\n\n", strongPassed, strongFailed)
+
+	fmt.Println("=== PHASE 2b: READING & VERIFYING DATA (stale semantic read) ===")
+	passed, failed := 0, 0
+
+	for key, expectedValue := range data {
+		url := fmt.Sprintf("%s/%s", baseURL, key)
+
+		resp, err := client.Get(url)
+		if err != nil {
+			fmt.Printf("FAIL: GET %s - error: %v\n", key, err)
+			failed++
+			continue
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			fmt.Printf("FAIL: GET %s - read error: %v\n", key, err)
+			failed++
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			fmt.Printf("FAIL: GET %s - status: %d\n", key, resp.StatusCode)
+			failed++
+			continue
+		}
+
+		var result Payload
+		if err := json.Unmarshal(body, &result); err != nil {
+			if string(body) == expectedValue {
+				fmt.Printf("PASS: %s = %s\n", key, expectedValue)
+				passed++
+				continue
+			}
+			fmt.Printf("FAIL: GET %s - parse error: %v (body: %s)\n", key, err, string(body))
+			failed++
+			continue
+		}
+
+		if result.Value == expectedValue {
+			fmt.Printf("PASS: %s = %s\n", key, expectedValue)
+			passed++
+		} else {
+			fmt.Printf("FAIL: %s expected %s, got %s\n", key, expectedValue, result.Value)
+			failed++
+		}
+	}
+
+	fmt.Printf("\nstale semantics Read Results - Passed: %d, Failed: %d\n\n", passed, failed)
 
 	fmt.Println("=== PHASE 3: DELETING DATA ===")
 	deleted, deleteFailed := 0, 0

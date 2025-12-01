@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 type Payload struct {
@@ -22,8 +23,10 @@ type Response struct {
 }
 
 func main() {
-	normalNode := "10.200.125.75:18000"
-	crashNode := "10.200.125.77:18002"
+	// normalNode := "10.200.125.75:18000"
+	// crashNode := "10.200.125.77:18002"
+	normalNode := "localhost:8000"
+	crashNode := "localhost:8002"
 	writeURL := fmt.Sprintf("http://%s/api/data", normalNode)
 	stopURL := fmt.Sprintf("http://%s/api/stop", crashNode)
 	readURL := fmt.Sprintf("http://%s/api/data", crashNode)
@@ -38,6 +41,8 @@ func main() {
 		resp.Body.Close()
 	}
 	fmt.Println()
+
+	time.Sleep(2 * time.Second)
 
 	data := map[string]string{
 		"tokyo":      "japan",
@@ -89,7 +94,7 @@ func main() {
 	}
 	fmt.Println("\nDone populating 20 key-value pairs.")
 
-	fmt.Println("\n=== Press ENTER to start read tests ===")
+	fmt.Println("\n=== After restarting the crashed server only then Press ENTER to start read tests ===")
 	reader := bufio.NewReader(os.Stdin)
 	reader.ReadString('\n')
 
