@@ -22,11 +22,11 @@ type Response struct {
 }
 
 func main() {
-	node1 := "localhost:8000"
-	node2 := "localhost:8001"
-	node3 := "localhost:8002"
-	node4 := "localhost:8003"
-	node5 := "localhost:8004"
+	node1 := "10.200.125.75:18000"
+	node2 := "10.200.125.76:18001"
+	node3 := "10.200.125.77:18002"
+	node4 := "10.200.125.78:18003"
+	node5 := "10.200.125.79:18004"
 
 	client := &http.Client{}
 

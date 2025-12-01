@@ -486,6 +486,12 @@ func (mr *MultiRaft) Read(key string, sc bool) ([]byte, error) {
 					return nil, fmt.Errorf("timeout waiting for strong consistent read (logindex: %d)", logIdx)
 				}
 			}
+		} else {
+			value, err := mr.KVStore.Read(key)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read key %s: %w", key, err)
+			}
+			return value, nil
 		}
 
 		if !raftNode.IsLeader() {
@@ -511,11 +517,12 @@ func (mr *MultiRaft) Read(key string, sc bool) ([]byte, error) {
 			return reply.Value, nil
 		}
 
-		value, err := mr.KVStore.Read(key)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read key %s: %w", key, err)
-		}
-		return value, nil
+		// value, err := mr.KVStore.Read(key)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("failed to read key %s: %w", key, err)
+		// }
+		// return value, nil
+		// return nil, fmt.Errorf("failed to read key %s", key)
 	}
 
 	for _, nodeId := range nodesHoldingData {

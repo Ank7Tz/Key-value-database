@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type Payload struct {
@@ -91,6 +92,8 @@ func main() {
 		fmt.Printf("PUT %s -> %s (status: %d)\n", key, value, resp.StatusCode)
 	}
 	fmt.Println("\nDone populating 40 key-value pairs.")
+
+	time.Sleep(2 * time.Second)
 
 	fmt.Println("=== PHASE 2: READING & VERIFYING DATA (stale semantic read) ===")
 	passed, failed := 0, 0
@@ -223,6 +226,8 @@ func main() {
 	}
 
 	fmt.Printf("\nDelete Results - Deleted: %d, Failed: %d\n\n", deleted, deleteFailed)
+
+	time.Sleep(2 * time.Second)
 
 	fmt.Println("=== PHASE 4: VERIFYING DELETION ===")
 	confirmed, notDeleted := 0, 0
