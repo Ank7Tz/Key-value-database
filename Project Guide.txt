@@ -77,6 +77,8 @@ Fault Tolerance tests –
 
 •	Case 1: 1 server down, all ops should work, bring back the node to sync updates (Manually needs to restart stopped server)
 
+make sure all the servers are running initially
+
 If using different khoury linux servers, please update the case1.go file at line 25 and line 26
 
 normalNode := "10.200.125.75:18000"
@@ -94,6 +96,8 @@ The program performs –
 
 •	Case 2: Multiple servers down, shards that have quorum should serve all ops, bring back the nodes to sync updates and make all shards active 
 (Manual intervention needed)
+
+make sure all the servers are running initially
 
 If using different khoury linux servers, please update the case2.go file at line 25-29
 
@@ -113,6 +117,8 @@ The program performs –
 Now bring up the stopped nodes (2, 3 & 4) and run the basic.go using “go run basic.go” to evaluate if cluster is able to operate fully. 
 
 •	Case 3: Bring down 4 nodes, and test if weak consistent reads are working for shards available in the surviving node (No Manual Intervention Needed)
+
+make sure all the servers are running initially
 
 If using different khoury linux servers, please update the case2.go file at line 30-34
 
