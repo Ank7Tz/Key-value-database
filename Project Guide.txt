@@ -86,6 +86,8 @@ crashNode := "10.200.125.77:18002"
 
 run case1.go using “go run case1.go”
 
+Node 3 (10.200.125.77) will be stopped, Please restart it before pressing enter to continue the test
+
 The program performs – 
 1.	Stops the “crashNode” (by calling stop API)
 2.	Writes data into “normalNode”
@@ -114,7 +116,7 @@ The program performs –
 2.	Performs read operations on node 1 for shard_7 (one of the active shards, since node 1 & 5 are active)
 3.	Cleans up by performing delete operations on node 5
 
-Now bring up the stopped nodes (2, 3 & 4) and run the basic.go using “go run basic.go” to evaluate if cluster is able to operate fully. 
+Now bring up the stopped nodes (2, 3 & 4) and run the basic.go using “go run basic.go” to evaluate if cluster is able to operate fully after recover of nodes.
 
 •	Case 3: Bring down 4 nodes, and test if weak consistent reads are working for shards available in the surviving node (No Manual Intervention Needed)
 
@@ -131,9 +133,11 @@ nodes := map[string]string{
 	}
 
 update populate.go if needed at line 17: baseURL := "10.200.125.75:18000"
-Run populate.go using "go run populate.go"
+Run populate.go using "go run populate.go" to populate data for case3
 
 Run case3.go using “go run case3.go”
+
+Phase 4 - strong consistency reads should fail (timeout of 5 second for each request)
 
 The program performs – 
 1.	Calls stats API from node_1

@@ -408,6 +408,10 @@ func (mr *MultiRaft) Write(key string, value []byte) error {
 				return fmt.Errorf("failed to forward write to leader: %w", err)
 			}
 
+			if reply == nil {
+				return fmt.Errorf("something went wrong (Write reply not received) for write forward")
+			}
+
 			if !reply.Success {
 				return fmt.Errorf("write failed on leader: %s", reply.Error)
 			}
@@ -430,7 +434,7 @@ func (mr *MultiRaft) Write(key string, value []byte) error {
 			}
 
 			reply, err := client.ForwardWrite(shardId, key, value)
-			if err != nil {
+			if err != nil || reply == nil {
 				continue
 			}
 
@@ -442,7 +446,7 @@ func (mr *MultiRaft) Write(key string, value []byte) error {
 				leaderClient, exists := mr.raftClients[reply.LeaderId]
 				if exists {
 					reply, err = leaderClient.ForwardWrite(shardId, key, value)
-					if err == nil && reply.Success {
+					if reply != nil && err == nil && reply.Success {
 						return nil
 					}
 				}
@@ -535,11 +539,11 @@ func (mr *MultiRaft) Read(key string, sc bool) ([]byte, error) {
 			continue
 		}
 
-		if reply.Success {
+		if reply != nil && reply.Success {
 			return reply.Value, nil
 		}
 
-		if strings.Contains(reply.Error, "key not found") {
+		if reply != nil && strings.Contains(reply.Error, "key not found") {
 			return nil, fmt.Errorf("%s", reply.Error)
 		}
 
@@ -547,10 +551,10 @@ func (mr *MultiRaft) Read(key string, sc bool) ([]byte, error) {
 			leaderClient, exists := mr.raftClients[reply.LeaderId]
 			if exists {
 				reply, err = leaderClient.ForwardRead(shardId, key, sc)
-				if err == nil && reply.Success {
+				if err == nil && reply != nil && reply.Success {
 					return reply.Value, nil
 				} else {
-					if strings.Contains(reply.Error, "key not found") {
+					if reply != nil && strings.Contains(reply.Error, "key not found") {
 						return nil, fmt.Errorf("%s", reply.Error)
 					}
 				}
@@ -593,6 +597,10 @@ func (mr *MultiRaft) Delete(key string) error {
 				return fmt.Errorf("failed to forward delete to leader: %s", err)
 			}
 
+			if reply == nil {
+				return fmt.Errorf("something went wrong (no reply received) for Delete forward")
+			}
+
 			if !reply.Success {
 				return fmt.Errorf("delete failed on leader: %s", reply.Error)
 			}
@@ -629,6 +637,10 @@ func (mr *MultiRaft) Delete(key string) error {
 				continue
 			}
 
+			if reply == nil {
+				continue
+			}
+
 			if reply.Success {
 				return nil
 			}
@@ -644,7 +656,7 @@ func (mr *MultiRaft) Delete(key string) error {
 					if err == nil && reply.Success {
 						return nil
 					} else {
-						if strings.Contains(reply.Error, "key not found") {
+						if reply != nil && strings.Contains(reply.Error, "key not found") {
 							return fmt.Errorf("%s", reply.Error)
 						}
 					}

@@ -98,6 +98,8 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 	reader.ReadString('\n')
 
+	time.Sleep(2 * time.Second)
+
 	fmt.Println("=== PHASE 2: READ TESTS ===")
 	passed := 0
 	failed := 0
