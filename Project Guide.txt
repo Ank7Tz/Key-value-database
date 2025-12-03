@@ -64,6 +64,14 @@ Example curl
 curl --request DELETE \
   --url http://localhost:8000/api/data/apple
 
+Few points to keep in notice
+1. Sometimes Read requests will fail in the tests - This is due to slow log replication
+read (stale) unable to find the value in node.
+2. Sometimes we will see connection errors - Please wait for some time, and restart the servers
+this could be due to too many sockets were open
+3. If you notice too many failures, please do "make clean" (remove data files & binary) then "make" to build the project again 
+
+
 Basic test –
 
 Update the base url inside the file (basic.go) as needed
